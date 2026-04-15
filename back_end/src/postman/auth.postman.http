@@ -1,0 +1,65 @@
+### sign up
+POST http://localhost:3000/api/auth/sign_up
+Content-Type: application/json
+
+{
+    "name": "Manh",
+    "email": "manh@gmail.com",
+    "password": "123"
+}
+
+### sign in
+
+POST http://localhost:3000/api/auth/sign_in
+Content-Type:  application/json
+
+{
+    "email": "manh@gmail.com",
+    "password": "123"
+}
+### sign in 
+POST http://localhost:3000/api/auth/sign_in
+Content-Type:  application/json
+
+{
+    "email": "",
+    "password": "1234"
+}
+
+### create
+POST http://localhost:3000/api/product
+Content-Type:  application/json
+
+{
+    "name": "Shirt 2",
+    "cost": "300"
+}
+
+### get product
+GET http://localhost:3000/api/product
+Content-Type:  application/json
+
+{
+}
+
+### add to cart
+POST http://localhost:3000/api/cart
+Content-Type: application/json
+
+{
+    "productID": "69dfc34e2b0194c6f8ba62e0"
+}
+### add to cart
+POST http://localhost:3000/api/cart
+Content-Type: application/json
+
+{
+    "productID": "69dfc4122b0194c6f8ba62e1"
+}
+
+### get cart
+GET http://localhost:3000/api/cart
+Content-Type: application/json
+
+{
+}
