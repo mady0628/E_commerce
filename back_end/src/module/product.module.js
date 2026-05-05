@@ -11,6 +11,14 @@ var productModule = new mongoose.Schema({
     },
     describe:{
         type: String,
+    },
+    image: {
+        type: String,
+    },
+    stock: {
+        type: Number,
+        required: true,
+        default: 0
     }
 })
 

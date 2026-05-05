@@ -1,0 +1,157 @@
+.admin-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  background: #0f0f13;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  text-align: left;
+}
+
+.admin-sidebar {
+  width: 20%;
+  min-width: 250px;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 1.5rem;
+}
+
+.admin-logo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, #aa3bff, #6b8cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.admin-nav-item {
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #8b8b99;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(170, 59, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.admin-nav-item:hover::before {
+  opacity: 1;
+}
+
+.admin-nav-item:hover {
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+.admin-nav-item.active {
+  background: rgba(170, 59, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(170, 59, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(170, 59, 255, 0.1);
+}
+
+.admin-nav-item span {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-content {
+  flex: 1;
+  background: radial-gradient(circle at top right, rgba(170, 59, 255, 0.05), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(107, 140, 255, 0.05), transparent 40%);
+  padding: 3rem 4rem;
+  overflow-y: auto;
+}
+
+.admin-header {
+  margin-bottom: 3rem;
+  animation: fadeInDown 0.5s ease-out forwards;
+}
+
+.admin-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+}
+
+.admin-header p {
+  color: #8b8b99;
+  font-size: 1.1rem;
+}
+
+.admin-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 2.5rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.admin-panel h2 {
+  font-size: 1.8rem;
+  margin: 0;
+  color: #fff;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar for admin layout */
+.admin-container ::-webkit-scrollbar {
+  width: 8px;
+}
+.admin-container ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-container ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.admin-container ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

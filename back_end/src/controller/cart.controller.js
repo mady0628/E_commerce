@@ -1,9 +1,15 @@
 import Cart from "../module/cart.module.js";
+import Product from "../module/product.module.js";
 
 export const addToCart = async(req,res) =>{
     const userID = req.user.id;
     const {productID} = req.body;
     
+    const product = await Product.findById(productID);
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
     let cart = await Cart.findOne({user: userID});
     if (!cart){
         cart = await Cart.create({
@@ -12,8 +18,14 @@ export const addToCart = async(req,res) =>{
         })
     }
     const exist = cart.products.find(
-        item => item.product.toString === productID
+        item => item.product.toString() === productID
     )
+    
+    const currentQuantity = exist ? exist.quantity : 0;
+    if (currentQuantity + 1 > product.stock) {
+        return res.status(400).json({ message: "Not enough stock available" });
+    }
+
     if (exist){
         exist.quantity +=1;
     } else {
@@ -36,4 +48,32 @@ export const getCart = async(req,res) =>{
         products: []
     })
     res.json(cart)
+}
+
+export const updateCartItem = async(req, res) => {
+    const userID = req.user.id;
+    const { productID, quantity } = req.body;
+
+    let cart = await Cart.findOne({user: userID});
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    const exist = cart.products.find(
+        item => item.product.toString() === productID
+    );
+
+    if (!exist) return res.status(404).json({ message: "Product not in cart" });
+
+    if (quantity <= 0) {
+        cart.products = cart.products.filter(item => item.product.toString() !== productID);
+    } else {
+        const product = await Product.findById(productID);
+        if (quantity > product.stock) {
+            return res.status(400).json({ message: "Not enough stock available" });
+        }
+        exist.quantity = quantity;
+    }
+
+    await cart.save();
+    await cart.populate("products.product");
+    res.json(cart);
 }

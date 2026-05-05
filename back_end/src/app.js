@@ -7,6 +7,7 @@ import dotenv from 'dotenv'
 import auth from './router/user.route.js'
 import product from './router/product.route.js'
 import cart from './router/cart.route.js'
+import order from './router/order.router.js'
 
 dotenv.config();
 const app = express();
@@ -15,6 +16,7 @@ const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cors());
+app.use('/uploads', express.static('public/uploads'));
 
 //mongoose
 
@@ -31,16 +33,11 @@ app.get('/',(req,res)=>{
     res.send("Server is running..");
 })
 
-// temporary test middleware for cart APIs
-app.use((req, res, next) => {
-    req.user = { id: "69dfba78f69e4a1117e8fad6" };
-    next();
-})
-
 //router
 app.use('/api/auth',auth);
 app.use('/api',product);
-app.use('/api',cart)
+app.use('/api',cart);
+app.use('/api',order);
 
 // connect sv
 const PORT=3000

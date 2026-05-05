@@ -1,65 +1,61 @@
+@baseUrl = http://localhost:3000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZGZiYTc4ZjY5ZTRhMTExN2U4ZmFkNiIsImVtYWlsIjoibWFuaEBnbWFpbC5jb20iLCJpYXQiOjE3NzY0Mjk0ODcsImV4cCI6MTc3NjUxNTg4N30.3_ubL4R8LDlVw25pwoWENRqgPAqYx0NxdHsIPRUgSSk
+@productID = 69e229c4c6e08dd628bd28b0
+
 ### sign up
-POST http://localhost:3000/api/auth/sign_up
+POST {{baseUrl}}/api/auth/sign_up
 Content-Type: application/json
 
 {
-    "name": "Manh",
-    "email": "manh@gmail.com",
-    "password": "123"
+  "name": "Manh",
+  "email": "manh@gmail.com",
+  "password": "123"
 }
 
-### sign in
-
-POST http://localhost:3000/api/auth/sign_in
-Content-Type:  application/json
-
-{
-    "email": "manh@gmail.com",
-    "password": "123"
-}
-### sign in 
-POST http://localhost:3000/api/auth/sign_in
-Content-Type:  application/json
+### sign in (copy token from response and paste into @token)
+POST {{baseUrl}}/api/auth/sign_in
+Content-Type: application/json
 
 {
-    "email": "",
-    "password": "1234"
+  "email": "manh@gmail.com",
+  "password": "123"
 }
 
-### create
-POST http://localhost:3000/api/product
-Content-Type:  application/json
+### create product (copy product._id and paste into @productID)
+POST {{baseUrl}}/api/product
+Authorization: Bearer {{token}}
+Content-Type: application/json
 
 {
-    "name": "Shirt 2",
-    "cost": "300"
+  "name": "Shirt test",
+  "cost": 300,
+  "describe": "product for cart/order test"
 }
 
 ### get product
-GET http://localhost:3000/api/product
-Content-Type:  application/json
-
-{
-}
+GET {{baseUrl}}/api/product
+Authorization: Bearer {{token}}
 
 ### add to cart
-POST http://localhost:3000/api/cart
+POST {{baseUrl}}/api/cart
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "productID": "69dfc34e2b0194c6f8ba62e0"
-}
-### add to cart
-POST http://localhost:3000/api/cart
-Content-Type: application/json
-
-{
-    "productID": "69dfc4122b0194c6f8ba62e1"
+  "productID": "{{productID}}"
 }
 
 ### get cart
-GET http://localhost:3000/api/cart
+GET {{baseUrl}}/api/cart
+Authorization: Bearer {{token}}
+
+### create order from cart
+POST {{baseUrl}}/api/order
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{
-}
+{}
+
+### get order
+GET {{baseUrl}}/api/order
+Authorization: Bearer {{token}}

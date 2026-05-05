@@ -2,11 +2,22 @@ import Product from '../module/product.module.js'
 
 export const creatProduct = async (req,res) =>{
     try {
-        const {name,cost} = req.body;
+        const {name,cost,describe,stock} = req.body;
+        
+        let imageUrl = '';
+        if (req.file) {
+            // Construct the URL path (assuming the server is running on localhost:3000)
+            imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+        } else if (req.body.image) {
+            imageUrl = req.body.image; // fallback for string URLs
+        }
 
         const product = await Product.create({
             name,
-            cost
+            cost,
+            describe,
+            stock: stock ? parseInt(stock) : 0,
+            image: imageUrl,
         })
         res.json({
             message: "created success",
@@ -24,4 +35,53 @@ export const getProduct = async (req,res) => {
     res.json({
         product
     })
+}
+
+export const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findByIdAndDelete(id);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        res.json({ message: "Delete success" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+export const updateProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, cost, describe, stock } = req.body;
+        
+        let imageUrl = undefined;
+        if (req.file) {
+            imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+        } else if (req.body.image) {
+            imageUrl = req.body.image;
+        }
+
+        const updateData = { name, cost, describe };
+        if (stock !== undefined) {
+            updateData.stock = parseInt(stock);
+        }
+        if (imageUrl !== undefined) {
+            updateData.image = imageUrl;
+        }
+
+        const product = await Product.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true }
+        );
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        res.json({ message: "Update success", product });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 }
