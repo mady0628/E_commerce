@@ -8,6 +8,7 @@ import auth from './router/user.route.js'
 import product from './router/product.route.js'
 import cart from './router/cart.route.js'
 import order from './router/order.router.js'
+import comment from './router/comment.router.js'
 
 dotenv.config();
 const app = express();
@@ -21,26 +22,27 @@ app.use('/uploads', express.static('public/uploads'));
 //mongoose
 
 mongoose.connect(process.env.MONGO_URL)
-.then(()=>{
-    console.log("connect success");
-})
-.catch((err)=>{
-    console.log(err);
-})
+    .then(() => {
+        console.log("connect success");
+    })
+    .catch((err) => {
+        console.log(err);
+    })
 
 //test api
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
     res.send("Server is running..");
 })
 
 //router
-app.use('/api/auth',auth);
-app.use('/api',product);
-app.use('/api',cart);
-app.use('/api',order);
+app.use('/api/auth', auth);
+app.use('/api', product);
+app.use('/api', cart);
+app.use('/api', order);
+app.use('/api', comment);
 
 // connect sv
-const PORT=3000
-app.listen(PORT,()=>{
+const PORT = 3000
+app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`)
 })

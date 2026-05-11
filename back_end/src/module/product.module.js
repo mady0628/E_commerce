@@ -19,6 +19,10 @@ var productModule = new mongoose.Schema({
         type: Number,
         required: true,
         default: 0
+    },
+    purchased:{
+        type: Number,
+        default:0,
     }
 })
 

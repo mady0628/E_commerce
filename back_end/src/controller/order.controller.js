@@ -50,7 +50,7 @@ export const createOrder = async (req, res) => {
 
         for (const item of selectedProducts) {
             await Product.findByIdAndUpdate(item.product._id, {
-                $inc: { stock: -item.quantity }
+                $inc: { stock: -item.quantity, purchased: +item.quantity },
             });
         }
 

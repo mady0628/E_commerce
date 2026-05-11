@@ -3,6 +3,8 @@ import Sign_in from '../src/pages/sign_in'
 import Sign_up from '../src/pages/sign_up';
 import Home from '../src/pages/home'
 import Product from '../src/pages/product'
+import ProductDetail from '../src/pages/product_detail'
+import SearchResult from '../src/pages/search_result'
 import Cart from '../src/pages/cart'
 import Order from '../src/pages/order';
 import AdminRoute from './route/AdminRoute';
@@ -21,6 +23,8 @@ function App() {
         <Route path='/sign_in' element={<Sign_in />} />
         <Route path='/sign_up' element={<Sign_up />} />
         <Route path='/product' element={<Product />} />
+        <Route path='/product/:id' element={<ProductDetail />} />
+        <Route path='/search' element={<SearchResult />} />
         <Route path='/cart' element={<Cart />} />
         <Route path='/order' element={<Order />} />
         <Route path='/admin' element={<AdminRoute><AdminPage /></AdminRoute>} />

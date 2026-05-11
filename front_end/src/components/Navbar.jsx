@@ -13,11 +13,11 @@ function Navbar() {
       fetch('http://localhost:3000/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) setUser(data.user);
-      })
-      .catch(err => console.error(err));
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) setUser(data.user);
+        })
+        .catch(err => console.error(err));
     }
   }, [token]);
 
@@ -54,25 +54,25 @@ function Navbar() {
   return (
     <nav style={navStyle}>
       <div style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-        <Link to="/">LumiStore</Link>
+        <Link to="/">MTD Store</Link>
       </div>
-      
+
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Link to="/" style={{ ...linkStyle, color: location.pathname === '/' ? '#fff' : '#8b8b99' }}>Home</Link>
         <Link to="/cart" style={{ ...linkStyle, color: location.pathname === '/cart' ? '#fff' : '#8b8b99' }}>Cart</Link>
         <Link to="/order" style={{ ...linkStyle, color: location.pathname === '/order' ? '#fff' : '#8b8b99' }}>Orders</Link>
-        
+
         {user?.role === 'admin' && (
           <Link to="/admin" style={{ ...linkStyle, color: '#aa3bff' }}>Admin Panel</Link>
         )}
 
         {token ? (
-          <button 
+          <button
             onClick={handleLogout}
-            style={{ 
-              padding: '0.6rem 1.2rem', 
-              background: 'rgba(255, 71, 87, 0.1)', 
-              color: '#ff4757', 
+            style={{
+              padding: '0.6rem 1.2rem',
+              background: 'rgba(255, 71, 87, 0.1)',
+              color: '#ff4757',
               borderRadius: '8px',
               border: '1px solid rgba(255,71,87,0.3)',
               fontWeight: 600
@@ -81,12 +81,12 @@ function Navbar() {
             Logout
           </button>
         ) : (
-          <Link 
+          <Link
             to="/sign_in"
-            style={{ 
-              padding: '0.6rem 1.2rem', 
-              background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', 
-              color: '#fff', 
+            style={{
+              padding: '0.6rem 1.2rem',
+              background: 'linear-gradient(135deg, #aa3bff, #6b8cff)',
+              color: '#fff',
               borderRadius: '8px',
               fontWeight: 600
             }}

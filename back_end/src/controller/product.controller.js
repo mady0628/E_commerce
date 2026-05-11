@@ -6,10 +6,9 @@ export const creatProduct = async (req,res) =>{
         
         let imageUrl = '';
         if (req.file) {
-            // Construct the URL path (assuming the server is running on localhost:3000)
             imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
         } else if (req.body.image) {
-            imageUrl = req.body.image; // fallback for string URLs
+            imageUrl = req.body.image;
         }
 
         const product = await Product.create({
@@ -31,10 +30,24 @@ export const creatProduct = async (req,res) =>{
 }
 
 export const getProduct = async (req,res) => {
-    const product = await Product.find()
-    res.json({
-        product
-    })
+    try {
+        const {q = ''} = req.query;
+
+        const filter = q.trim()
+            ?{
+                $or: [
+                    {name: {$regex: q.trim(),$options: 'i'}},
+                    {describe: {$regex: q.trim(),$options: 'i'}}
+                ],
+            }
+            :{}
+        
+        const product = await Product.find(filter);
+
+        res.json({product})
+    } catch (err) {
+        res.status(500).json({error: err.message});
+    }
 }
 
 export const deleteProduct = async (req, res) => {

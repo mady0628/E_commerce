@@ -4,6 +4,7 @@ import { apiFetch } from '../utils/api';
 
 function Home() {
   const [products, setproducts] = useState([]);
+  const [keywordInput, setKeywordInput] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,10 +54,37 @@ function Home() {
         </div>
       </div>
 
+      <input
+        type="text"
+        value={keywordInput}
+        placeholder="Search products..."
+        onChange={(e) => setKeywordInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const key = keywordInput.trim();
+            if (!key) {
+              return;
+            }
+            navigate(`/search?q=${encodeURIComponent(key)}`);
+          }
+        }}
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          marginBottom: '1.5rem',
+          padding: '0.7rem 1rem',
+          borderRadius: '10px',
+          border: '1px solid rgba(255,255,255,0.15)',
+          background: 'rgba(255,255,255,0.03)',
+          color: '#fff',
+          outline: 'none',
+        }}
+      />
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
         {products.map((p) => (
           <div key={p._id} className="glass-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.3s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
-            <div style={{ height: '200px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', overflow: 'hidden' }}>
+            <div onClick={() => navigate(`/product/${p._id}`)} style={{ height: '200px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', overflow: 'hidden' }}>
               {p.image ? (
                 <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -64,7 +92,7 @@ function Home() {
               )}
             </div>
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#fff' }}>{p.name}</h3>
+              <h3 onClick={() => navigate(`/product/${p._id}`)} style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#fff', cursor: 'pointer' }}>{p.name}</h3>
               <p style={{ color: '#8b8b99', fontSize: '0.9rem', marginBottom: '1rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {p.describe || 'No description available'}
               </p>
@@ -106,9 +134,11 @@ function Home() {
                   </button>
                 )}
               </div>
-              <div style={{ marginTop: '0.8rem', fontSize: '0.85rem', color: p.stock > 0 ? '#2ed573' : '#ff4757', fontWeight: 600 }}>
-                {p.stock > 0 ? `In Stock: ${p.stock}` : 'Currently unavailable'}
+              <div style={{ marginTop: '0.8rem', fontSize: '0.85rem', color: p.stock > 0 ? '#2ed573' : '#ff4757', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{p.stock > 0 ? `In Stock: ${p.stock}` : 'Currently unavailable'}</span>
+                <span style={{ color: '#6b8cff' }}>🔥 {p.purchased || 0} sold</span>
               </div>
+
             </div>
           </div>
         ))}
