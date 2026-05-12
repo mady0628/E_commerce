@@ -1,25 +1,29 @@
 import mongoose from 'mongoose'
 
 var orderModule = new mongoose.Schema({
-    user:{
+    user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    products:[
+    products: [
         {
-            product:{
+            product: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Product',
             },
             quantity: Number,
         }
     ],
-    total:{
+    total: {
         type: Number,
     },
-    status:{
+    status: {
         type: String,
         default: "pending",
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
     },
     recipientName: {
         type: String,
@@ -35,4 +39,4 @@ var orderModule = new mongoose.Schema({
     }
 })
 
-export default mongoose.model('Order',orderModule);
+export default mongoose.model('Order', orderModule);

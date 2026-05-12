@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import './admin_page.css';
+import SalesDashboard from '../components/SalesDashboard';
 
 function AdminPage() {
-  const [activeTab, setActiveTab] = useState('user');
+  const [activeTab, setActiveTab] = useState('dashboard');
   
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -270,6 +271,12 @@ function AdminPage() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return (
+          <div className="admin-panel" key="dashboard">
+            <SalesDashboard orders={orders} />
+          </div>
+        );
       case 'user':
         return (
           <div className="admin-panel" key="user">
@@ -835,6 +842,12 @@ function AdminPage() {
       <aside className="admin-sidebar">
         <div className="admin-logo">AdminPanel</div>
         <nav className="admin-nav">
+          <div 
+            className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <span>📊 Dashboard</span>
+          </div>
           <div 
             className={`admin-nav-item ${activeTab === 'user' ? 'active' : ''}`}
             onClick={() => setActiveTab('user')}
