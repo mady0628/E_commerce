@@ -23,6 +23,10 @@ var productModule = new mongoose.Schema({
     purchased:{
         type: Number,
         default:0,
+    },
+    createAt:{
+        type: Date,
+        default: Date.now,
     }
 })
 

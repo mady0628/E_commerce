@@ -2,10 +2,43 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
 
+const PRODUCT_LIMIT = 10;
+
 function Home() {
-  const [products, setproducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [sort, setSort] = useState('newest');
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const navigate = useNavigate();
+
+  const fetchProducts = async (offset = 0, reset = false) => {
+    try {
+      if (reset) setLoading(true);
+      else setLoadingMore(true);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:3000/api/product?sort=${sort}&productOffset=${offset}&productLimit=${PRODUCT_LIMIT}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      const data = await res.json();
+      
+      if (reset) {
+        setProducts(data.product || []);
+      } else {
+        setProducts(prev => [...prev, ...(data.product || [])]);
+      }
+      setPagination(data.productPagination || null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -13,14 +46,14 @@ function Home() {
       navigate('/sign_in');
       return;
     }
-    fetch('http://localhost:3000/api/product', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      }
-    })
-      .then(res => res.json())
-      .then(data => setproducts(data.product || []))
-  }, [navigate])
+    fetchProducts(0, true);
+  }, [navigate, sort]);
+
+  const handleLoadMore = () => {
+    if (pagination?.hasMore) {
+      fetchProducts(pagination.nextOffset, false);
+    }
+  };
 
   const addtoCart = async (id) => {
     const token = localStorage.getItem('token');
@@ -54,32 +87,55 @@ function Home() {
         </div>
       </div>
 
-      <input
-        type="text"
-        value={keywordInput}
-        placeholder="Search products..."
-        onChange={(e) => setKeywordInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            const key = keywordInput.trim();
-            if (!key) {
-              return;
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <input
+          type="text"
+          value={keywordInput}
+          placeholder="Search products..."
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const key = keywordInput.trim();
+              if (!key) {
+                return;
+              }
+              navigate(`/search?q=${encodeURIComponent(key)}`);
             }
-            navigate(`/search?q=${encodeURIComponent(key)}`);
-          }
-        }}
-        style={{
-          width: '100%',
-          maxWidth: '420px',
-          marginBottom: '1.5rem',
-          padding: '0.7rem 1rem',
-          borderRadius: '10px',
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.03)',
-          color: '#fff',
-          outline: 'none',
-        }}
-      />
+          }}
+          style={{
+            width: '100%',
+            maxWidth: '420px',
+            padding: '0.7rem 1rem',
+            borderRadius: '10px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.03)',
+            color: '#fff',
+            outline: 'none',
+          }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: '#8b8b99', fontSize: '0.95rem' }}>Sort by:</span>
+          <select 
+            value={sort} 
+            onChange={e => setSort(e.target.value)} 
+            style={{ 
+              padding: '0.7rem 1rem', 
+              borderRadius: '10px', 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid rgba(255,255,255,0.15)', 
+              color: '#fff', 
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="newest" style={{background: '#1e1e2f'}}>Newest</option>
+            <option value="best_selling" style={{background: '#1e1e2f'}}>Best Selling</option>
+            <option value="price_asc" style={{background: '#1e1e2f'}}>Price: Low to High</option>
+            <option value="price_desc" style={{background: '#1e1e2f'}}>Price: High to Low</option>
+          </select>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
         {products.map((p) => (
@@ -142,12 +198,40 @@ function Home() {
             </div>
           </div>
         ))}
-        {products.length === 0 && (
+        {!loading && products.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', color: '#8b8b99', fontSize: '1.2rem' }}>
             No products available at the moment.
           </div>
         )}
       </div>
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#8b8b99' }}>Loading products...</div>
+      )}
+
+      {pagination?.hasMore && (
+        <button
+          onClick={handleLoadMore}
+          disabled={loadingMore}
+          style={{
+            display: 'block',
+            margin: '2rem auto 0',
+            padding: '0.8rem 2.5rem',
+            borderRadius: '10px',
+            background: 'rgba(170,59,255,0.15)',
+            color: '#aa3bff',
+            border: '1px solid rgba(170,59,255,0.3)',
+            fontWeight: 600,
+            cursor: loadingMore ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            opacity: loadingMore ? 0.6 : 1
+          }}
+          onMouseOver={(e) => { if (!loadingMore) { e.target.style.background = '#aa3bff'; e.target.style.color = '#fff'; } }}
+          onMouseOut={(e) => { if (!loadingMore) { e.target.style.background = 'rgba(170,59,255,0.15)'; e.target.style.color = '#aa3bff'; } }}
+        >
+          {loadingMore ? 'Loading...' : `Load More Products (${pagination.total - products.length} remaining)`}
+        </button>
+      )}
     </div>
   )
 }

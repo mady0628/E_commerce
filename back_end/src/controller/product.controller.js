@@ -31,24 +31,55 @@ export const creatProduct = async (req,res) =>{
 
 export const getProduct = async (req,res) => {
     try {
-        const {q = ''} = req.query;
-
-        const filter = q.trim()
-            ?{
-                $or: [
-                    {name: {$regex: q.trim(),$options: 'i'}},
-                    {describe: {$regex: q.trim(),$options: 'i'}}
-                ],
-            }
-            :{}
+        const {q = '', sort = 'newest'} = req.query;
         
-        const product = await Product.find(filter);
+        let sortOption = {createAt: -1}; // default newest
+        if (sort === 'best_selling') sortOption = {purchased: -1, createAt: -1};
+        if (sort === 'price_asc') sortOption = {cost: 1, createAt: -1};
+        if (sort === 'price_desc') sortOption = {cost: -1, createAt: -1};
 
-        res.json({product})
+        const rawOffset = Number.parseInt(req.query.productOffset, 10);
+        const rawLimit = Number.parseInt(req.query.productLimit, 10);
+
+        const productOffset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
+        let productLimit = Number.isNaN(rawLimit) || rawLimit < 0 ? 10 : rawLimit;
+        
+        if (productLimit > 20) productLimit = 20;
+        const filter = q.trim()
+            ? {
+                $or: [
+                    {name: {$regex: q.trim(), $options: 'i'}},
+                    {describe: {$regex: q.trim(), $options: 'i'}}
+                ]
+            }
+            : {};
+        
+        const product = await Product.find(filter)
+            .sort(sortOption)
+            .skip(productOffset)
+            .limit(productLimit);
+
+        const total = await Product.countDocuments(filter);
+        const returned = product.length;
+        const nextOffset = productOffset + returned;
+        const hasMore = nextOffset < total;
+
+        res.json({
+            product,
+            productPagination:{
+                offset: productOffset,
+                limit: productLimit,
+                returned,
+                total,
+                nextOffset,
+                hasMore
+            }
+        });
     } catch (err) {
         res.status(500).json({error: err.message});
     }
 }
+
 
 export const deleteProduct = async (req, res) => {
     try {

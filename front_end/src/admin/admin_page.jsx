@@ -40,18 +40,37 @@ function AdminPage() {
     }
   };
 
-  const fetchProducts = async () => {
+  const [productPagination, setProductPagination] = useState(null);
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
+
+  const fetchProducts = async (offset = 0, reset = true) => {
     try {
-      const res = await fetch('http://localhost:3000/api/product', { 
+      if (!reset) setLoadingMoreProducts(true);
+      const res = await fetch(`http://localhost:3000/api/product?productOffset=${offset}&productLimit=10`, { 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await res.json();
-      if (data.product) setProducts(data.product);
+      if (data.product) {
+        if (reset) {
+          setProducts(data.product);
+        } else {
+          setProducts(prev => [...prev, ...data.product]);
+        }
+        setProductPagination(data.productPagination || null);
+      }
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingMoreProducts(false);
+    }
+  };
+
+  const handleLoadMoreProducts = () => {
+    if (productPagination?.hasMore) {
+      fetchProducts(productPagination.nextOffset, false);
     }
   };
 
@@ -124,10 +143,11 @@ function AdminPage() {
         fetchProducts();
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to save product");
+        alert(data.error || data.message || "Failed to save product");
       }
     } catch (err) {
       console.error(err);
+      alert(err.message);
     }
   };
 
@@ -445,6 +465,30 @@ function AdminPage() {
               ))}
               {products.length === 0 && <div style={{ color: '#8b8b99', gridColumn: '1 / -1' }}>No products found.</div>}
             </div>
+
+            {productPagination?.hasMore && (
+              <button
+                onClick={handleLoadMoreProducts}
+                disabled={loadingMoreProducts}
+                style={{
+                  display: 'block',
+                  margin: '2rem auto 0',
+                  padding: '0.8rem 2.5rem',
+                  borderRadius: '10px',
+                  background: 'rgba(170,59,255,0.15)',
+                  color: '#aa3bff',
+                  border: '1px solid rgba(170,59,255,0.3)',
+                  fontWeight: 600,
+                  cursor: loadingMoreProducts ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  opacity: loadingMoreProducts ? 0.6 : 1
+                }}
+                onMouseOver={(e) => { if (!loadingMoreProducts) { e.target.style.background = '#aa3bff'; e.target.style.color = '#fff'; } }}
+                onMouseOut={(e) => { if (!loadingMoreProducts) { e.target.style.background = 'rgba(170,59,255,0.15)'; e.target.style.color = '#aa3bff'; } }}
+              >
+                {loadingMoreProducts ? 'Loading...' : `Load More Products (${productPagination.total - products.length} remaining)`}
+              </button>
+            )}
           </div>
         );
       case 'order':

@@ -2,11 +2,44 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
 
+const PRODUCT_LIMIT = 10;
+
 function SearchResult() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [products, setproducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const keyword = (searchParams.get('q') || '').trim();
+  const [sort, setSort] = useState('newest');
+  const [pagination, setPagination] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchProducts = async (offset = 0, reset = false) => {
+    try {
+      if (reset) setLoading(true);
+      else setLoadingMore(true);
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:3000/api/product?q=${encodeURIComponent(keyword)}&sort=${sort}&productOffset=${offset}&productLimit=${PRODUCT_LIMIT}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      const data = await res.json();
+      
+      if (reset) {
+        setProducts(data.product || []);
+      } else {
+        setProducts(prev => [...prev, ...(data.product || [])]);
+      }
+      setPagination(data.productPagination || null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -14,17 +47,15 @@ function SearchResult() {
       navigate('/sign_in');
       return;
     }
-
     if (!keyword) return;
+    fetchProducts(0, true);
+  }, [navigate, keyword, sort]);
 
-    fetch(`http://localhost:3000/api/product?q=${encodeURIComponent(keyword)}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      }
-    })
-      .then(res => res.json())
-      .then(data => setproducts(data.product || []));
-  }, [navigate, keyword]);
+  const handleLoadMore = () => {
+    if (pagination?.hasMore) {
+      fetchProducts(pagination.nextOffset, false);
+    }
+  };
 
   const addtoCart = async (id) => {
     const token = localStorage.getItem('token');
@@ -54,20 +85,43 @@ function SearchResult() {
             Đây là kết quả của "{keyword}".
           </p>
         </div>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            padding: '0.65rem 1.2rem',
-            borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.04)',
-            color: '#fff',
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          Quay về trang chính
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ color: '#8b8b99', fontSize: '0.95rem' }}>Sort by:</span>
+            <select 
+              value={sort} 
+              onChange={e => setSort(e.target.value)} 
+              style={{ 
+                padding: '0.65rem 1rem', 
+                borderRadius: '8px', 
+                background: 'rgba(255,255,255,0.04)', 
+                border: '1px solid rgba(255,255,255,0.15)', 
+                color: '#fff', 
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="newest" style={{background: '#1e1e2f'}}>Newest</option>
+              <option value="best_selling" style={{background: '#1e1e2f'}}>Best Selling</option>
+              <option value="price_asc" style={{background: '#1e1e2f'}}>Price: Low to High</option>
+              <option value="price_desc" style={{background: '#1e1e2f'}}>Price: High to Low</option>
+            </select>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              padding: '0.65rem 1.2rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.04)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            Quay về trang chính
+          </button>
+        </div>
       </div>
 
       {!keyword && (
@@ -144,6 +198,34 @@ function SearchResult() {
             </div>
           ))}
         </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#8b8b99' }}>Loading products...</div>
+      )}
+
+      {pagination?.hasMore && (
+        <button
+          onClick={handleLoadMore}
+          disabled={loadingMore}
+          style={{
+            display: 'block',
+            margin: '2rem auto 0',
+            padding: '0.8rem 2.5rem',
+            borderRadius: '10px',
+            background: 'rgba(170,59,255,0.15)',
+            color: '#aa3bff',
+            border: '1px solid rgba(170,59,255,0.3)',
+            fontWeight: 600,
+            cursor: loadingMore ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            opacity: loadingMore ? 0.6 : 1
+          }}
+          onMouseOver={(e) => { if (!loadingMore) { e.target.style.background = '#aa3bff'; e.target.style.color = '#fff'; } }}
+          onMouseOut={(e) => { if (!loadingMore) { e.target.style.background = 'rgba(170,59,255,0.15)'; e.target.style.color = '#aa3bff'; } }}
+        >
+          {loadingMore ? 'Loading...' : `Load More Products (${pagination.total - products.length} remaining)`}
+        </button>
       )}
     </div>
   );
