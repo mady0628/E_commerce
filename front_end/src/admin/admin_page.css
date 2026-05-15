@@ -90,6 +90,28 @@
   z-index: 1;
 }
 
+.admin-home-link {
+  margin-top: auto;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-home-link:hover {
+  background: rgba(170, 59, 255, 0.15);
+  border-color: rgba(170, 59, 255, 0.3);
+  transform: translateX(4px);
+}
+
 .admin-content {
   flex: 1;
   background: radial-gradient(circle at top right, rgba(170, 59, 255, 0.05), transparent 40%),

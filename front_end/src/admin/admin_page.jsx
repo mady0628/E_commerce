@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import './admin_page.css';
 import SalesDashboard from '../components/SalesDashboard';
 import { apiUrl } from '../utils/api';
@@ -1158,6 +1159,9 @@ function AdminPage() {
             <span>💬 Comments</span>
           </div>
         </nav>
+        <Link to="/" className="admin-home-link">
+          <span>🏠 Home</span>
+        </Link>
       </aside>
 
       {/* Main Content - 4/5 width */}
