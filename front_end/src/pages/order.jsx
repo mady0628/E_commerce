@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
+// Helper function to format currency to VND
+const formatVND = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 function Order() {
   const [orders, setOrders] = useState([]);
   const navigate = useNavigate();
@@ -15,7 +25,7 @@ function Order() {
 
     const fetchOrder = async () => {
       try {
-        const data = await apiFetch("http://localhost:3000/api/order", {
+        const data = await apiFetch("/api/order", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -85,7 +95,7 @@ function Order() {
                 
                 <div>
                   <div style={{ color: '#8b8b99', fontSize: '0.9rem', marginBottom: '0.3rem' }}>Total Amount</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#aa3bff' }}>${totalCost}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#aa3bff' }}>{formatVND(totalCost)}</div>
                 </div>
 
                 <div>
@@ -120,10 +130,10 @@ function Order() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, marginBottom: '0.2rem', color: '#fff' }}>{item.product?.name || 'Unknown Item'}</div>
-                        <div style={{ color: '#8b8b99', fontSize: '0.9rem' }}>Qty: {item.quantity} × ${item.product?.cost || 0}</div>
+                        <div style={{ color: '#8b8b99', fontSize: '0.9rem' }}>Qty: {item.quantity} × {formatVND(item.product?.cost || 0)}</div>
                       </div>
                       <div style={{ fontWeight: 600, color: '#fff' }}>
-                        ${(item.product?.cost || 0) * (item.quantity || 0)}
+                        {formatVND((item.product?.cost || 0) * (item.quantity || 0))}
                       </div>
                     </div>
                   ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { apiUrl } from "../utils/api";
 
 export default function AdminRoute({children}){
     const [status, setStatus] = useState("loading");
@@ -13,7 +14,7 @@ export default function AdminRoute({children}){
 
         let alive = true;
 
-        fetch("http://localhost:3000/api/auth/me", {
+        fetch(apiUrl("/api/auth/me"), {
             method: "GET",
             headers: {
                 Authorization: `Bearer ${token}`,

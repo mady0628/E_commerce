@@ -11,7 +11,7 @@ function Sign_up() {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      const data = await apiFetch('http://localhost:3000/api/auth/sign_up', {
+      const data = await apiFetch('/api/auth/sign_up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),

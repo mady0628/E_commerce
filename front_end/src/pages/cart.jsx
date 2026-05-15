@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../utils/api";
+import { apiFetch, apiUrl } from "../utils/api";
+
+// Helper function to format currency to VND
+const formatVND = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 function Cart() {
   const [cart, setcart] = useState(null);
@@ -18,7 +28,7 @@ function Cart() {
 
     const fetchCart = async () => {
       try {
-        const data = await apiFetch("http://localhost:3000/api/cart", {
+        const data = await apiFetch("/api/cart", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -34,7 +44,7 @@ function Cart() {
   const updateQuantity = async (productID, newQuantity) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:3000/api/cart/item", {
+      const res = await fetch(apiUrl("/api/cart/item"), {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
@@ -80,7 +90,7 @@ function Cart() {
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:3000/api/order", {
+      const res = await fetch(apiUrl("/api/order"), {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -154,7 +164,7 @@ function Cart() {
               
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0' }}>{item.product?.name || 'Unknown Product'}</h3>
-                <p style={{ color: '#8b8b99', margin: 0 }}>Price: <span style={{ color: '#aa3bff', fontWeight: 600 }}>${item.product?.cost}</span></p>
+                <p style={{ color: '#8b8b99', margin: 0 }}>Price: <span style={{ color: '#aa3bff', fontWeight: 600 }}>{formatVND(item.product?.cost)}</span></p>
               </div>
 
               <div style={{ textAlign: 'center', padding: '0 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -176,7 +186,7 @@ function Cart() {
                 <div>
                   <p style={{ color: '#8b8b99', fontSize: '0.9rem', margin: '0 0 0.3rem 0' }}>Total</p>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#fff' }}>
-                    ${(item.product?.cost || 0) * (item.quantity || 0)}
+                    {formatVND((item.product?.cost || 0) * (item.quantity || 0))}
                   </div>
                 </div>
                 <button 
@@ -201,7 +211,7 @@ function Cart() {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: '#8b8b99' }}>
                 <span>Selected Items ({selectedItems.length})</span>
-                <span>${total}</span>
+                <span>{formatVND(total)}</span>
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', color: '#8b8b99' }}>
@@ -211,7 +221,7 @@ function Cart() {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', marginBottom: '2rem' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>Total</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#aa3bff' }}>${total}</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#aa3bff' }}>{formatVND(total)}</span>
               </div>
               
               <button 
@@ -268,7 +278,7 @@ function Cart() {
                   className="btn-primary" 
                   style={{ flex: 2, padding: '1rem' }}
                 >
-                  Confirm Order (${total})
+                  Confirm Order ({formatVND(total)})
                 </button>
               </div>
             </form>

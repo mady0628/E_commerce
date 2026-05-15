@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { apiUrl } from '../utils/api';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ function Navbar() {
   useEffect(() => {
     if (token) {
       // Optional: fetch user data to check if admin
-      fetch('http://localhost:3000/api/auth/me', {
+      fetch(apiUrl('/api/auth/me'), {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())

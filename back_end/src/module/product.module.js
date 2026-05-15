@@ -1,33 +1,37 @@
 import mongoose from "mongoose";
 
 var productModule = new mongoose.Schema({
-    name:{
+    name: {
         type: String,
         required: true,
     },
-    cost:{
+    cost: {
         type: Number,
         required: true,
     },
-    describe:{
+    describe: {
         type: String,
     },
-    image: {
+    image: [{
         type: String,
+    }],
+    rate: {
+        type: Number,
+        default: 0,
     },
     stock: {
         type: Number,
         required: true,
         default: 0
     },
-    purchased:{
+    purchased: {
         type: Number,
-        default:0,
+        default: 0,
     },
-    createAt:{
+    createAt: {
         type: Date,
         default: Date.now,
     }
 })
 
-export default mongoose.model('Product',productModule);
+export default mongoose.model('Product', productModule);

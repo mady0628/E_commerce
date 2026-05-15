@@ -1,8 +1,46 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiFetch } from '../utils/api';
+import { apiFetch, apiUrl } from '../utils/api';
 
 const PRODUCT_LIMIT = 10;
+
+// Helper function to format currency to VND
+const formatVND = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const StarIcon = ({ filled, half, size = 18 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={filled ? '#ffa502' : half ? 'url(#halfGradSearch)' : 'none'}
+    stroke="#ffa502"
+    strokeWidth="2"
+    strokeLinejoin="round"
+  >
+    <defs>
+      <linearGradient id="halfGradSearch">
+        <stop offset="50%" stopColor="#ffa502" />
+        <stop offset="50%" stopColor="transparent" />
+      </linearGradient>
+    </defs>
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const RatingStars = ({ value }) => {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffa502', fontWeight: 600, fontSize: '0.95rem' }}>
+      <span>{!value || value === 0 ? 'no rate' : `${value}⭐`}</span>
+    </div>
+  );
+};
 
 function SearchResult() {
   const navigate = useNavigate();
@@ -20,7 +58,7 @@ function SearchResult() {
       else setLoadingMore(true);
 
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/api/product?q=${encodeURIComponent(keyword)}&sort=${sort}&productOffset=${offset}&productLimit=${PRODUCT_LIMIT}`, {
+      const res = await fetch(`${apiUrl('/api/product')}?q=${encodeURIComponent(keyword)}&sort=${sort}&productOffset=${offset}&productLimit=${PRODUCT_LIMIT}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
@@ -60,7 +98,7 @@ function SearchResult() {
   const addtoCart = async (id) => {
     const token = localStorage.getItem('token');
     try {
-      const data = await apiFetch('http://localhost:3000/api/cart', {
+      const data = await apiFetch('/api/cart', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ productID: id })
@@ -148,12 +186,15 @@ function SearchResult() {
                 )}
               </div>
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <h3 onClick={() => navigate(`/product/${p._id}`)} style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#fff', cursor: 'pointer' }}>{p.name}</h3>
+                <h3 onClick={() => navigate(`/product/${p._id}`)} style={{ fontSize: '1.25rem', marginBottom: '0.3rem', color: '#fff', cursor: 'pointer' }}>{p.name}</h3>
+                <div style={{ marginBottom: '0.8rem' }}>
+                  <RatingStars value={p.rate || 0} />
+                </div>
                 <p style={{ color: '#8b8b99', fontSize: '0.9rem', marginBottom: '1rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {p.describe || 'No description available'}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#aa3bff' }}>${p.cost}</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#aa3bff' }}>{formatVND(p.cost)}</span>
 
                   {p.stock > 0 ? (
                     <button

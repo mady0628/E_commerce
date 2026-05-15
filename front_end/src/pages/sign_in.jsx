@@ -10,7 +10,7 @@ function Sign_in() {
   const handleSignin = async (e) => {
     e.preventDefault();
     try {
-      const res = await apiFetch('http://localhost:3000/api/auth/sign_in', {
+      const res = await apiFetch('/api/auth/sign_in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

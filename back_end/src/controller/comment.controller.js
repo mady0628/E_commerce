@@ -54,6 +54,10 @@ export const createComment = async (req, res) => {
         const { id } = req.params;
         const { content, rating } = req.body;
 
+        const imgUrls = (req.files && req.files.length > 0)
+            ? req.files.map(f => `http://localhost:3000/uploads/${f.filename}`)
+            : [];
+
         const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
@@ -68,21 +72,32 @@ export const createComment = async (req, res) => {
             product: id,
             content: content || '',
             rating,
+            images: imgUrls,
         });
+
+        const allcomment = await Comment.find({ product: id, isHidden: false })
+        const sumRate = allcomment.reduce((sum, c) => sum + c.rating, 0)
+        const averageRate = allcomment.length > 0 ? Math.round((sumRate / allcomment.length) * 10) / 10 : 0
+
+        const productAfterUpdate = await Product.findByIdAndUpdate(
+            id,
+            { rate: averageRate },
+            { new: true }
+        )
 
         const populated = await Comment.findById(comment._id).populate("user", "name");
 
-        res.status(201).json({ comment: populated });
+        res.status(201).json({ comment: populated, productAfterUpdate });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 }
 
-export const AdminGetAllComment = async(req,res)=>{
+export const AdminGetAllComment = async (req, res) => {
     try {
-        const {id} = req.params;
-        const comment = await Comment.find({product: id,}).populate('user', 'name email').sort({ createAt: -1 });
-        if (!comment){
+        const { id } = req.params;
+        const comment = await Comment.find({ product: id, }).populate('user', 'name email').sort({ createAt: -1 });
+        if (!comment) {
             return res.status(404).json({
                 error: "Not found comment;"
             })
@@ -91,29 +106,38 @@ export const AdminGetAllComment = async(req,res)=>{
             comment,
         })
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(500).json({ error: err.message });
     }
 }
-export const AdminUpdateCommentStatus = async(req,res)=>{
-    try{
-        const {id} = req.params;
-        const {status} = req.body;
-        const hidden = status==="Hidden";
+export const AdminUpdateCommentStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const hidden = status === "Hidden";
         const comment = await Comment.findByIdAndUpdate(
             id,
             { isHidden: hidden },
-            { new : true },
+            { new: true },
         )
-        if (!comment){
+        if (!comment) {
             return res.status(404).json({
                 error: "Not found comment;"
             })
         }
+
+        // Recalculate product rating
+        const productId = comment.product;
+        const allVisibleComments = await Comment.find({ product: productId, isHidden: false });
+        const sumRate = allVisibleComments.reduce((sum, c) => sum + c.rating, 0);
+        const averageRate = allVisibleComments.length > 0 ? Math.round((sumRate / allVisibleComments.length) * 10) / 10 : 0;
+
+        await Product.findByIdAndUpdate(productId, { rate: averageRate });
+
         res.json({
             message: "Update success",
             comment,
         })
-    } catch(err){
-        res.status(500).json({error:err.message});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 }

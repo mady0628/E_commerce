@@ -64,7 +64,17 @@ export const me = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password');
+        const { q = '' } = req.query;
+        const searchTerm = q.trim();
+
+        const filter = searchTerm ? {
+            $or: [
+                { name: { $regex: searchTerm, $options: 'i' } },
+                { email: { $regex: searchTerm, $options: 'i' } }
+            ]
+        } : {};
+
+        const users = await User.find(filter).select('-password');
         res.json({
             message: "success",
             users

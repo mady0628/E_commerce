@@ -1,6 +1,7 @@
 import Cart from '../module/cart.module.js'
 import Order from '../module/order.module.js'
 import Product from '../module/product.module.js'
+import User from "../module/user.module.js"
 
 export const createOrder = async (req, res) => {
     try {
@@ -82,9 +83,48 @@ export const getOrder = async (req, res) => {
 
 export const getAllOrder = async (req, res) => {
     try {
-        const orders = await Order.find()
-            .populate("user", "name email")
-            .populate("products.product", "name cost");
+        const { q = '' } = req.query;
+        const searchTerm = q.trim();
+        let rawOrders;
+
+        if (searchTerm) {
+            const users = await User.find({ name: { $regex: searchTerm, $options: 'i' } });
+            const userIDs = users.map(user => user._id);
+
+            rawOrders = await Order.aggregate([
+                {
+                    $addFields: {
+                        idString: { $toString: "$_id" },
+                        dateString: { 
+                            $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "+07:00" } 
+                        },
+                        dateStringVN: {
+                            $dateToString: { format: "%d/%m/%Y", date: "$createdAt", timezone: "+07:00" } 
+                        }
+                    }
+                },
+                {
+                    $match: {
+                        $or: [
+                            { user: { $in: userIDs } },
+                            { idString: { $regex: searchTerm, $options: 'i' } },
+                            { recipientName: { $regex: searchTerm, $options: 'i' } },
+                            { phone: { $regex: searchTerm, $options: 'i' } },
+                            { address: { $regex: searchTerm, $options: 'i' } },
+                            { dateString: { $regex: searchTerm, $options: 'i' } },
+                            { dateStringVN: { $regex: searchTerm, $options: 'i' } }
+                        ]
+                    }
+                }
+            ]);
+        } else {
+            rawOrders = await Order.find({});
+        }
+
+        const orders = await Order.populate(rawOrders, [
+            { path: "user", select: "name email" },
+            { path: "products.product", select: "name cost" }
+        ]);
 
         res.json({
             message: "success",

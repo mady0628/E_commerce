@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { apiFetch } from '../utils/api';
+import { apiFetch, apiUrl } from '../utils/api';
 
-const API = 'http://localhost:3000/api';
+const API = apiUrl('/api');
 const COMMENT_LIMIT = 5;
+
+// Helper function to format currency to VND
+const formatVND = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const StarIcon = ({ filled, half, size = 18, onClick, hoverable }) => (
   <svg
@@ -29,13 +39,13 @@ const StarIcon = ({ filled, half, size = 18, onClick, hoverable }) => (
   </svg>
 );
 
-const RatingStars = ({ value, size = 16 }) => (
-  <span style={{ display: 'inline-flex', gap: 2 }}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <StarIcon key={i} filled={i <= value} size={size} />
-    ))}
-  </span>
-);
+const RatingStars = ({ value, showNumber }) => {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffa502', fontWeight: 600, fontSize: showNumber ? '1.2rem' : '1rem' }}>
+      <span>{!value || value === 0 ? 'no rate' : `${value}⭐`}</span>
+    </div>
+  );
+};
 
 /* ── Styles object ─────────────────────────────── */
 const s = {
@@ -164,11 +174,14 @@ function ProductDetail() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);   // index ảnh đang hiển thị lớn
 
   // comment form
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [content, setContent] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   /* ── fetch product + initial comments ── */
@@ -215,6 +228,27 @@ function ProductDetail() {
     }
   };
 
+  /* ── handle file selection ── */
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + selectedFiles.length > 5) {
+      return alert('Maximum 5 images allowed');
+    }
+    
+    setSelectedFiles(prev => [...prev, ...files]);
+    
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   /* ── submit comment ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -222,17 +256,28 @@ function ProductDetail() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const data = await apiFetch(`${API}/product/${id}/comment`, {
+      
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('rating', rating);
+      selectedFiles.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const res = await fetch(`${API}/product/${id}/comment`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ content, rating }),
+        body: formData,
       });
+      const data = await res.json();
 
       if (data.comment) {
         setComments(prev => [data.comment, ...prev]);
         setPagination(prev => prev ? { ...prev, total: prev.total + 1 } : prev);
         setContent('');
         setRating(0);
+        setSelectedFiles([]);
+        setPreviews([]);
       } else {
         alert(data.message || data.error || 'Failed to post comment');
       }
@@ -257,6 +302,16 @@ function ProductDetail() {
   };
 
   const getInitial = (name) => (name ? name.charAt(0).toUpperCase() : '?');
+
+  // Chuẩn hóa images thành mảng (tương thích cả string cũ lẫn array mới)
+  const images = product
+    ? (Array.isArray(product.image)
+        ? product.image.filter(Boolean)
+        : product.image ? [product.image] : [])
+    : [];
+
+  const prevImg = () => setActiveImg(i => (i - 1 + images.length) % images.length);
+  const nextImg = () => setActiveImg(i => (i + 1) % images.length);
 
   /* ── render ── */
   if (loading) {
@@ -289,27 +344,90 @@ function ProductDetail() {
 
       {/* ── Product Info ── */}
       <div style={s.grid}>
-        {/* Image */}
-        <div style={s.imgBox}>
-          {product.image ? (
-            <img src={product.image} alt={product.name}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }} />
-          ) : (
-            <span style={{ fontSize: '6rem' }}>🛍️</span>
+        {/* Image Gallery */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Main image + arrows */}
+          <div style={{ ...s.imgBox, position: 'relative' }}>
+            {images.length > 0 ? (
+              <img
+                key={activeImg}
+                src={images[activeImg]}
+                alt={product.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16, animation: 'fadeIn 0.25s ease-out' }}
+              />
+            ) : (
+              <span style={{ fontSize: '6rem' }}>🛍️</span>
+            )}
+
+            {/* Prev arrow */}
+            {images.length > 1 && (
+              <button onClick={prevImg} style={{
+                position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none',
+                borderRadius: '50%', width: 38, height: 38, fontSize: '1.1rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(4px)', transition: 'background 0.2s'
+              }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(170,59,255,0.7)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
+              >&#8249;</button>
+            )}
+
+            {/* Next arrow */}
+            {images.length > 1 && (
+              <button onClick={nextImg} style={{
+                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none',
+                borderRadius: '50%', width: 38, height: 38, fontSize: '1.1rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(4px)', transition: 'background 0.2s'
+              }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(170,59,255,0.7)'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
+              >&#8250;</button>
+            )}
+          </div>
+
+          {/* Thumbnails */}
+          {images.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {images.map((url, i) => (
+                <div
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  style={{
+                    width: 72, height: 72, borderRadius: 10, overflow: 'hidden',
+                    cursor: 'pointer', flexShrink: 0,
+                    border: i === activeImg
+                      ? '2px solid #aa3bff'
+                      : '2px solid rgba(255,255,255,0.1)',
+                    transition: 'border-color 0.2s, transform 0.2s',
+                    transform: i === activeImg ? 'scale(1.05)' : 'scale(1)',
+                  }}
+                  onMouseOver={e => { if (i !== activeImg) e.currentTarget.style.borderColor = 'rgba(170,59,255,0.5)'; }}
+                  onMouseOut={e => { if (i !== activeImg) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                >
+                  <img src={url} alt={`thumb-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
         {/* Info */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '2.2rem', marginBottom: '0.75rem', fontWeight: 700 }}>
+          <h1 style={{ fontSize: '2.2rem', marginBottom: '0.4rem', fontWeight: 700 }}>
             {product.name}
           </h1>
+          <div style={{ marginBottom: '1.2rem' }}>
+            <RatingStars value={product.rate || 0} size={20} showNumber />
+          </div>
           <p style={{ color: '#8b8b99', lineHeight: 1.7, marginBottom: '1.5rem', fontSize: '1.05rem' }}>
             {product.describe || 'No description available.'}
           </p>
 
           <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#aa3bff', marginBottom: '1.5rem' }}>
-            ${product.cost}
+            {formatVND(product.cost)}
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
@@ -410,6 +528,32 @@ function ProductDetail() {
             />
           </div>
 
+          {/* Image Upload */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ color: '#8b8b99', fontSize: '0.9rem', display: 'block', marginBottom: 8 }}>
+              Add Images (Max 5)
+            </label>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              {previews.map((src, i) => (
+                <div key={i} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <img src={src} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button 
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(255,71,87,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >✕</button>
+                </div>
+              ))}
+              {selectedFiles.length < 5 && (
+                <label style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.3s' }} onMouseOver={e => e.currentTarget.style.borderColor = '#aa3bff'} onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}>
+                  <span style={{ fontSize: '1.5rem', color: '#8b8b99' }}>+</span>
+                  <span style={{ fontSize: '0.7rem', color: '#8b8b99' }}>Upload</span>
+                  <input type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                </label>
+              )}
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
@@ -468,9 +612,23 @@ function ProductDetail() {
                 </div>
                 {/* Body */}
                 {c.content && (
-                  <p style={{ color: '#ccc', lineHeight: 1.6, margin: 0, paddingLeft: 50 }}>
+                  <p style={{ color: '#ccc', lineHeight: 1.6, margin: '0 0 1rem 50px' }}>
                     {c.content}
                   </p>
+                )}
+                {/* Comment Images */}
+                {c.images && c.images.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: 50 }}>
+                    {c.images.map((img, i) => (
+                      <div 
+                        key={i} 
+                        style={{ width: 100, height: 100, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', cursor: 'zoom-in' }}
+                        onClick={() => window.open(img, '_blank')}
+                      >
+                        <img src={img} alt="review" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}

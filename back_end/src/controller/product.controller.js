@@ -1,22 +1,19 @@
 import Product from '../module/product.module.js'
 
-export const creatProduct = async (req,res) =>{
+export const creatProduct = async (req, res) => {
     try {
-        const {name,cost,describe,stock} = req.body;
-        
-        let imageUrl = '';
-        if (req.file) {
-            imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
-        } else if (req.body.image) {
-            imageUrl = req.body.image;
-        }
+        const { name, cost, describe, stock } = req.body;
+
+        const imageUrls = (req.files && req.files.length > 0)
+            ? req.files.map(f => `http://localhost:3000/uploads/${f.filename}`)
+            : [];
 
         const product = await Product.create({
             name,
             cost,
             describe,
             stock: stock ? parseInt(stock) : 0,
-            image: imageUrl,
+            image: imageUrls,
         })
         res.json({
             message: "created success",
@@ -29,31 +26,32 @@ export const creatProduct = async (req,res) =>{
     }
 }
 
-export const getProduct = async (req,res) => {
+
+export const getProduct = async (req, res) => {
     try {
-        const {q = '', sort = 'newest'} = req.query;
-        
-        let sortOption = {createAt: -1}; // default newest
-        if (sort === 'best_selling') sortOption = {purchased: -1, createAt: -1};
-        if (sort === 'price_asc') sortOption = {cost: 1, createAt: -1};
-        if (sort === 'price_desc') sortOption = {cost: -1, createAt: -1};
+        const { q = '', sort = 'newest' } = req.query;
+
+        let sortOption = { createAt: -1 }; // default newest
+        if (sort === 'best_selling') sortOption = { purchased: -1, createAt: -1 };
+        if (sort === 'price_asc') sortOption = { cost: 1, createAt: -1 };
+        if (sort === 'price_desc') sortOption = { cost: -1, createAt: -1 };
 
         const rawOffset = Number.parseInt(req.query.productOffset, 10);
         const rawLimit = Number.parseInt(req.query.productLimit, 10);
 
         const productOffset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : rawOffset;
         let productLimit = Number.isNaN(rawLimit) || rawLimit < 0 ? 10 : rawLimit;
-        
+
         if (productLimit > 20) productLimit = 20;
         const filter = q.trim()
             ? {
                 $or: [
-                    {name: {$regex: q.trim(), $options: 'i'}},
-                    {describe: {$regex: q.trim(), $options: 'i'}}
+                    { name: { $regex: q.trim(), $options: 'i' } },
+                    { describe: { $regex: q.trim(), $options: 'i' } }
                 ]
             }
             : {};
-        
+
         const product = await Product.find(filter)
             .sort(sortOption)
             .skip(productOffset)
@@ -66,7 +64,7 @@ export const getProduct = async (req,res) => {
 
         res.json({
             product,
-            productPagination:{
+            productPagination: {
                 offset: productOffset,
                 limit: productLimit,
                 returned,
@@ -76,7 +74,7 @@ export const getProduct = async (req,res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({error: err.message});
+        res.status(500).json({ error: err.message });
     }
 }
 
@@ -98,20 +96,26 @@ export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, cost, describe, stock } = req.body;
-        
-        let imageUrl = undefined;
-        if (req.file) {
-            imageUrl = `http://localhost:3000/uploads/${req.file.filename}`;
-        } else if (req.body.image) {
-            imageUrl = req.body.image;
+
+        // Ảnh cũ muốn giữ lại (frontend gửi lên dạng JSON string)
+        let keepImages = [];
+        if (req.body.keepImages) {
+            try { keepImages = JSON.parse(req.body.keepImages); } catch { keepImages = []; }
+        }
+
+        // Ảnh mới vừa upload
+        let newImages = [];
+        if (req.files && req.files.length > 0) {
+            newImages = req.files.map(f => `http://localhost:3000/uploads/${f.filename}`);
         }
 
         const updateData = { name, cost, describe };
         if (stock !== undefined) {
             updateData.stock = parseInt(stock);
         }
-        if (imageUrl !== undefined) {
-            updateData.image = imageUrl;
+        // Chỉ cập nhật image khi client có gửi keepImages hoặc có file mới
+        if (req.body.keepImages !== undefined || newImages.length > 0) {
+            updateData.image = [...keepImages, ...newImages];
         }
 
         const product = await Product.findByIdAndUpdate(

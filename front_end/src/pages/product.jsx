@@ -18,7 +18,7 @@ function Product(){
 
     const addProduct = async()=>{
         const token = localStorage.getItem('token');
-        const data = await apiFetch('http://localhost:3000/api/product',{
+        const data = await apiFetch('/api/product',{
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`
@@ -45,8 +45,11 @@ function Product(){
             </input>
             <br></br>
             <input 
+            type="number"
             placeholder='Cost'
-            onChange={(p)=> setcost(p.target.value)}>
+            min="0"
+            onChange={(p)=> setcost(p.target.value)}
+            >
             </input>
             <br></br>
             <input 

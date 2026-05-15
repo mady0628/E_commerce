@@ -1,18 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './admin_page.css';
 import SalesDashboard from '../components/SalesDashboard';
+import { apiUrl } from '../utils/api';
+
+// Helper function to format currency to VND
+const formatVND = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const formatOrderDateLabel = (dateValue) => {
+  return `Ngày ${new Intl.DateTimeFormat('vi-VN', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  }).format(new Date(dateValue))}`;
+};
+
+const getOrderDateKey = (dateValue) => {
+  const date = new Date(dateValue);
+  return date.toISOString().slice(0, 10);
+};
+
+const groupOrdersByDate = (orders = []) => {
+  const groups = orders.reduce((acc, order) => {
+    if (!order.createdAt) {
+      return acc;
+    }
+
+    const key = getOrderDateKey(order.createdAt);
+
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+
+    acc[key].push(order);
+    return acc;
+  }, {});
+
+  return Object.entries(groups).sort((a, b) => {
+    const dateA = a[1][0]?.createdAt ? new Date(a[1][0].createdAt).getTime() : 0;
+    const dateB = b[1][0]?.createdAt ? new Date(b[1][0].createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
+};
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const adminContentRef = useRef(null);
   
   const [users, setUsers] = useState([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
   const [orders, setOrders] = useState([]);
+  const [orderSearchTerm, setOrderSearchTerm] = useState('');
   const [comments, setComments] = useState([]);
   const [selectedProductForComments, setSelectedProductForComments] = useState(null);
   const [loadingComments, setLoadingComments] = useState(false);
   
-  const [newProduct, setNewProduct] = useState({ name: '', cost: '', describe: '', image: '', stock: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', cost: '', describe: '', images: [], keepImages: [], stock: '' });
   const [editingProductId, setEditingProductId] = useState(null);
 
   const token = localStorage.getItem('token');
@@ -26,9 +77,12 @@ function AdminPage() {
     fetchOrders();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (query = '') => {
     try {
-      const res = await fetch('http://localhost:3000/api/auth/users', { 
+      const url = query 
+        ? `${apiUrl('/api/auth/users')}?q=${encodeURIComponent(query)}`
+        : apiUrl('/api/auth/users');
+      const res = await fetch(url, { 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -44,10 +98,10 @@ function AdminPage() {
   const [productPagination, setProductPagination] = useState(null);
   const [loadingMoreProducts, setLoadingMoreProducts] = useState(false);
 
-  const fetchProducts = async (offset = 0, reset = true) => {
+  const fetchProducts = async (offset = 0, reset = true, query = productSearchTerm) => {
     try {
       if (!reset) setLoadingMoreProducts(true);
-      const res = await fetch(`http://localhost:3000/api/product?productOffset=${offset}&productLimit=10`, { 
+      const res = await fetch(`${apiUrl('/api/product')}?productOffset=${offset}&productLimit=10&q=${encodeURIComponent(query)}`, { 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -75,9 +129,13 @@ function AdminPage() {
     }
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (query = '') => {
     try {
-      const res = await fetch('http://localhost:3000/api/orders', { 
+      const url = query 
+        ? `${apiUrl('/api/orders')}?q=${encodeURIComponent(query)}` 
+        : apiUrl('/api/orders');
+
+      const res = await fetch(url, { 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -93,7 +151,7 @@ function AdminPage() {
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/auth/users/${id}`, {
+      const res = await fetch(`${apiUrl('/api/auth/users')}/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -119,15 +177,18 @@ function AdminPage() {
       formData.append('cost', newProduct.cost);
       formData.append('describe', newProduct.describe);
       formData.append('stock', newProduct.stock);
-      if (newProduct.image instanceof File) {
-        formData.append('image', newProduct.image);
-      } else if (newProduct.image) {
-        formData.append('image', newProduct.image);
+
+      // Append từng ảnh mới vào field 'images'
+      newProduct.images.forEach(file => formData.append('images', file));
+
+      // Khi edit: gửi danh sách ảnh cũ muốn giữ (dưới dạng JSON)
+      if (editingProductId) {
+        formData.append('keepImages', JSON.stringify(newProduct.keepImages));
       }
 
       const url = editingProductId 
-        ? `http://localhost:3000/api/product/${editingProductId}`
-        : 'http://localhost:3000/api/product';
+        ? `${apiUrl('/api/product')}/${editingProductId}`
+        : apiUrl('/api/product');
         
       const method = editingProductId ? 'PATCH' : 'POST';
 
@@ -139,7 +200,7 @@ function AdminPage() {
         body: formData
       });
       if (res.ok) {
-        setNewProduct({ name: '', cost: '', describe: '', image: '', stock: '' });
+        setNewProduct({ name: '', cost: '', describe: '', images: [], keepImages: [], stock: '' });
         setEditingProductId(null);
         fetchProducts();
       } else {
@@ -157,21 +218,23 @@ function AdminPage() {
       name: product.name,
       cost: product.cost,
       describe: product.describe,
-      image: product.image || '',
+      images: [],                                          // chưa chọn file mới
+      keepImages: Array.isArray(product.image) ? product.image : (product.image ? [product.image] : []),
       stock: product.stock !== undefined ? product.stock : ''
     });
     setEditingProductId(product._id);
+    adminContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
-    setNewProduct({ name: '', cost: '', describe: '', image: '', stock: '' });
+    setNewProduct({ name: '', cost: '', describe: '', images: [], keepImages: [], stock: '' });
     setEditingProductId(null);
   };
 
   const handleDeleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/product/${id}`, {
+      const res = await fetch(`${apiUrl('/api/product')}/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -190,7 +253,7 @@ function AdminPage() {
 
   const handleUpdateOrderStatus = async (id, status) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/orders/${id}/status`, {
+      const res = await fetch(`${apiUrl('/api/orders')}/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +275,7 @@ function AdminPage() {
   const fetchCommentsByProduct = async (productId) => {
     setLoadingComments(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/product/${productId}/comments`, {
+      const res = await fetch(`${apiUrl('/api/admin/product')}/${productId}/comments`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -242,7 +305,7 @@ function AdminPage() {
   const handleToggleCommentVisibility = async (commentId, currentHidden) => {
     const newStatus = currentHidden ? 'Visible' : 'Hidden';
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/comments/${commentId}/visibility`, {
+      const res = await fetch(`${apiUrl('/api/admin/comments')}/${commentId}/visibility`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -281,9 +344,67 @@ function AdminPage() {
         return (
           <div className="admin-panel" key="user">
             <h2>User Management</h2>
-            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '2rem' }}>
+            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '1rem' }}>
               View and manage registered users, their roles, and account status.
             </p>
+
+            {/* User Search Input */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+              <input 
+                type="text" 
+                placeholder="Search users by name or email..." 
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchUsers(userSearchTerm)}
+                style={{ 
+                  flex: 1, 
+                  maxWidth: '400px', 
+                  padding: '0.8rem 1rem', 
+                  borderRadius: '8px', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  color: '#fff',
+                  outline: 'none'
+                }}
+              />
+              <button 
+                onClick={() => fetchUsers(userSearchTerm)}
+                style={{ 
+                  padding: '0.8rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                onMouseOut={(e) => e.target.style.opacity = '1'}
+              >
+                Search
+              </button>
+              {userSearchTerm && (
+                <button 
+                  onClick={() => { setUserSearchTerm(''); fetchUsers(''); }}
+                  style={{ 
+                    padding: '0.8rem 1.5rem', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
               {users.map((user) => (
                 <div key={user._id} style={{ 
@@ -343,9 +464,66 @@ function AdminPage() {
         return (
           <div className="admin-panel" key="product">
             <h2>Product Catalog</h2>
-            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '2rem' }}>
+            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '1rem' }}>
               Manage your store products, inventory, pricing, and categories.
             </p>
+
+            {/* Product Search Input */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+              <input 
+                type="text" 
+                placeholder="Search products by name or description..." 
+                value={productSearchTerm}
+                onChange={(e) => setProductSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchProducts(0, true, productSearchTerm)}
+                style={{ 
+                  flex: 1, 
+                  maxWidth: '400px', 
+                  padding: '0.8rem 1rem', 
+                  borderRadius: '8px', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  color: '#fff',
+                  outline: 'none'
+                }}
+              />
+              <button 
+                onClick={() => fetchProducts(0, true, productSearchTerm)}
+                style={{ 
+                  padding: '0.8rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                onMouseOut={(e) => e.target.style.opacity = '1'}
+              >
+                Search
+              </button>
+              {productSearchTerm && (
+                <button 
+                  onClick={() => { setProductSearchTerm(''); fetchProducts(0, true, ''); }}
+                  style={{ 
+                    padding: '0.8rem 1.5rem', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
             
             <div style={{ marginBottom: '2rem', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
               <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.2rem', color: '#fff' }}>
@@ -364,6 +542,7 @@ function AdminPage() {
                   type="number" 
                   placeholder="Price" 
                   value={newProduct.cost}
+                  min="0"
                   onChange={e => setNewProduct({...newProduct, cost: e.target.value})}
                   required
                   style={{ width: '120px', padding: '0.8rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
@@ -383,15 +562,46 @@ function AdminPage() {
                   onChange={e => setNewProduct({...newProduct, describe: e.target.value})}
                   style={{ flex: 2, minWidth: '250px', padding: '0.8rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 />
-                <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={e => setNewProduct({...newProduct, image: e.target.files[0]})}
-                    style={{ padding: '0.6rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
-                  />
-                  {editingProductId && typeof newProduct.image === 'string' && newProduct.image && (
-                    <span style={{ fontSize: '0.8rem', color: '#8b8b99', marginTop: '0.3rem' }}>Leave blank to keep current image</span>
+                <div style={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {/* Ảnh cũ đang giữ lại (chỉ hiện khi edit) */}
+                  {editingProductId && newProduct.keepImages.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.8rem', color: '#8b8b99', marginBottom: '0.4rem' }}>Current images (click × to remove):</div>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {newProduct.keepImages.map((url, i) => (
+                          <div key={i} style={{ position: 'relative', display: 'inline-block' }}>
+                            <img src={url} alt={`img-${i}`} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)' }} />
+                            <button
+                              type="button"
+                              onClick={() => setNewProduct({ ...newProduct, keepImages: newProduct.keepImages.filter((_, idx) => idx !== i) })}
+                              style={{ position: 'absolute', top: -6, right: -6, background: '#ff4757', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, fontSize: '0.75rem', cursor: 'pointer', lineHeight: '20px', textAlign: 'center', padding: 0 }}
+                            >×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input chọn ảnh mới */}
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={e => setNewProduct({ ...newProduct, images: Array.from(e.target.files) })}
+                      style={{ padding: '0.6rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <span style={{ fontSize: '0.78rem', color: '#8b8b99', marginTop: '0.25rem', display: 'block' }}>Tối đa 5 ảnh, mỗi ảnh ≤ 5MB</span>
+                  </div>
+
+                  {/* Preview ảnh mới chọn */}
+                  {newProduct.images.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {newProduct.images.map((file, i) => (
+                        <img key={i} src={URL.createObjectURL(file)} alt={`new-${i}`}
+                          style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: '2px solid #aa3bff' }} />
+                      ))}
+                    </div>
                   )}
                 </div>
                 
@@ -424,21 +634,37 @@ function AdminPage() {
                   borderRadius: '20px', 
                   border: '1px solid rgba(255,255,255,0.05)', 
                   overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
                   transition: 'all 0.3s'
                 }}>
-                  <div style={{ height: '140px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b8cff', fontSize: '3rem', overflow: 'hidden' }}>
-                    {product.image ? (
-                      <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ height: '140px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b8cff', fontSize: '3rem', overflow: 'hidden', position: 'relative' }}>
+                    {product.image && (Array.isArray(product.image) ? product.image[0] : product.image) ? (
+                      <>
+                        <img
+                          src={Array.isArray(product.image) ? product.image[0] : product.image}
+                          alt={product.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        {Array.isArray(product.image) && product.image.length > 1 && (
+                          <span style={{
+                            position: 'absolute', bottom: 6, right: 8,
+                            background: 'rgba(0,0,0,0.6)', color: '#fff',
+                            fontSize: '0.75rem', fontWeight: 600,
+                            padding: '2px 7px', borderRadius: 20
+                          }}>+{product.image.length - 1}</span>
+                        )}
+                      </>
                     ) : (
                       '🛍️'
                     )}
                   </div>
-                  <div style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '1.1rem' }}>{product.name}</div>
                     <div style={{ color: '#8b8b99', fontSize: '0.9rem', marginBottom: '0.5rem', height: '40px', overflow: 'hidden' }}>{product.describe || 'No description available.'}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div style={{ color: '#aa3bff', fontWeight: 'bold', fontSize: '1.2rem' }}>${product.cost}</div>
-                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ color: '#aa3bff', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.8rem' }}>{formatVND(product.cost)}</div>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         <div style={{ fontSize: '0.85rem', padding: '0.2rem 0.6rem', borderRadius: '12px', background: product.stock > 0 ? 'rgba(46, 213, 115, 0.1)' : 'rgba(255, 71, 87, 0.1)', color: product.stock > 0 ? '#2ed573' : '#ff4757', fontWeight: 600 }}>
                           {product.stock > 0 ? `Stock: ${product.stock}` : 'Out of Stock'}
                         </div>
@@ -446,10 +672,8 @@ function AdminPage() {
                           Sold: {product.purchased || 0}
                         </div>
                       </div>
-
-                    </div>
                     
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
                       <button 
                         onClick={() => handleEditProduct(product)}
                         style={{ flex: 1, padding: '0.5rem', background: 'rgba(170, 59, 255, 0.1)', color: '#aa3bff', border: '1px solid rgba(170, 59, 255, 0.3)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
@@ -499,82 +723,143 @@ function AdminPage() {
           </div>
         );
       case 'order':
+        const groupedOrders = groupOrdersByDate(orders);
         return (
           <div className="admin-panel" key="order">
             <h2>Order History</h2>
-            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '2rem' }}>
+            <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '1rem' }}>
               Track customer orders, fulfillment status, and recent transactions.
             </p>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>Order ID</th>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>User</th>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>Shipping Info</th>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>Items</th>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>Status</th>
-                    <th style={{ padding: '1rem', color: '#8b8b99', fontWeight: 500 }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => {
+
+            {/* Search Input */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+              <input 
+                type="text" 
+                placeholder="Search by ID, user, phone, address, or date..." 
+                value={orderSearchTerm}
+                onChange={(e) => setOrderSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchOrders(orderSearchTerm)}
+                style={{ 
+                  flex: 1, 
+                  maxWidth: '400px', 
+                  padding: '0.8rem 1rem', 
+                  borderRadius: '8px', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  color: '#fff',
+                  outline: 'none'
+                }}
+              />
+              <button 
+                onClick={() => fetchOrders(orderSearchTerm)}
+                style={{ 
+                  padding: '0.8rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                onMouseOut={(e) => e.target.style.opacity = '1'}
+              >
+                Search
+              </button>
+              {orderSearchTerm && (
+                <button 
+                  onClick={() => { setOrderSearchTerm(''); fetchOrders(''); }}
+                  style={{ 
+                    padding: '0.8rem 1.5rem', 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s'
+                  }}
+                  onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {groupedOrders.length === 0 && (
+                <div style={{ color: '#8b8b99', textAlign: 'center', padding: '1rem 0' }}>No orders found.</div>
+              )}
+
+              {groupedOrders.map(([dateLabel, dateOrders]) => (
+                <div key={dateLabel} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ color: '#aa3bff', fontSize: '1.05rem', fontWeight: 700 }}>
+                    {formatOrderDateLabel(dateOrders[0].createdAt)}
+                  </div>
+
+                  {dateOrders.map((order) => {
                     const totalItems = order.products?.length || 0;
                     return (
-                      <tr key={order._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '1rem', fontWeight: 600 }}>#{order._id.substring(0,8)}</td>
-                        <td style={{ padding: '1rem', color: '#8b8b99' }}>{order.user?.name || 'Unknown'}</td>
-                        <td style={{ padding: '1rem', color: '#8b8b99', fontSize: '0.85rem' }}>
-                          <div><strong>Name:</strong> {order.recipientName || 'N/A'}</div>
-                          <div><strong>Phone:</strong> {order.phone || 'N/A'}</div>
-                          <div style={{ maxWidth: '250px', wordBreak: 'break-word', marginTop: '0.2rem' }}>
-                            <strong>Addr:</strong> {order.address || 'N/A'}
+                      <div key={order._id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.2rem 1.4rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr 1fr auto', gap: '1rem', alignItems: 'start' }}>
+                          <div>
+                            <div style={{ color: '#8b8b99', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Order ID</div>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem', wordBreak: 'break-all' }}>#{order._id}</div>
                           </div>
-                        </td>
-                        <td style={{ padding: '1rem', color: '#8b8b99' }}>{totalItems} items (${order.total})</td>
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{ 
-                            padding: '0.4rem 1rem', 
-                            background: order.status === 'success' ? 'rgba(46, 213, 115, 0.1)' : order.status === 'cancel' ? 'rgba(255, 71, 87, 0.1)' : order.status === 'shipping' ? 'rgba(55, 162, 235, 0.1)' : 'rgba(255, 165, 2, 0.1)', 
-                            color: order.status === 'success' ? '#2ed573' : order.status === 'cancel' ? '#ff4757' : order.status === 'shipping' ? '#37a2eb' : '#ffa502', 
-                            borderRadius: '12px', 
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                            textTransform: 'capitalize'
-                          }}>
-                            {order.status || 'pending'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <select 
-                            value={order.status || 'pending'} 
-                            onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
-                            style={{ 
-                              background: 'rgba(255,255,255,0.05)', 
-                              color: '#fff', 
-                              border: '1px solid rgba(255,255,255,0.1)', 
-                              padding: '0.5rem', 
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="pending" style={{ background: '#1e1e2f', color: '#fff' }}>Pending</option>
-                            <option value="shipping" style={{ background: '#1e1e2f', color: '#fff' }}>Shipping</option>
-                            <option value="success" style={{ background: '#1e1e2f', color: '#fff' }}>Success</option>
-                            <option value="cancel" style={{ background: '#1e1e2f', color: '#fff' }}>Cancel</option>
-                          </select>
-                        </td>
-                      </tr>
+                          <div>
+                            <div style={{ color: '#8b8b99', fontSize: '0.85rem', marginBottom: '0.25rem' }}>User</div>
+                            <div style={{ color: '#fff' }}>{order.user?.name || 'Unknown'}</div>
+                          </div>
+                          <div style={{ color: '#8b8b99', fontSize: '0.85rem' }}>
+                            <div><strong>Name:</strong> {order.recipientName || 'N/A'}</div>
+                            <div><strong>Phone:</strong> {order.phone || 'N/A'}</div>
+                            <div style={{ maxWidth: '260px', wordBreak: 'break-word', marginTop: '0.2rem' }}><strong>Addr:</strong> {order.address || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#8b8b99', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Created At</div>
+                            <div style={{ color: '#fff' }}>{order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'N/A'}</div>
+                            <div style={{ color: '#8b8b99', fontSize: '0.85rem', marginTop: '0.35rem' }}>{totalItems} items ({formatVND(order.total || 0)})</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start' }}>
+                            <span style={{ 
+                              padding: '0.4rem 1rem', 
+                              background: order.status === 'success' ? 'rgba(46, 213, 115, 0.1)' : order.status === 'cancel' ? 'rgba(255, 71, 87, 0.1)' : order.status === 'shipping' ? 'rgba(55, 162, 235, 0.1)' : 'rgba(255, 165, 2, 0.1)', 
+                              color: order.status === 'success' ? '#2ed573' : order.status === 'cancel' ? '#ff4757' : order.status === 'shipping' ? '#37a2eb' : '#ffa502', 
+                              borderRadius: '12px', 
+                              fontSize: '0.85rem',
+                              fontWeight: 600,
+                              textTransform: 'capitalize'
+                            }}>
+                              {order.status || 'pending'}
+                            </span>
+                            <select 
+                              value={order.status || 'pending'} 
+                              onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                              style={{ 
+                                background: 'rgba(255,255,255,0.05)', 
+                                color: '#fff', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                padding: '0.5rem', 
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                width: '100%'
+                              }}
+                            >
+                              <option value="pending" style={{ background: '#1e1e2f', color: '#fff' }}>Pending</option>
+                              <option value="shipping" style={{ background: '#1e1e2f', color: '#fff' }}>Shipping</option>
+                              <option value="success" style={{ background: '#1e1e2f', color: '#fff' }}>Success</option>
+                              <option value="cancel" style={{ background: '#1e1e2f', color: '#fff' }}>Cancel</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                  {orders.length === 0 && (
-                    <tr>
-                      <td colSpan="5" style={{ padding: '1rem', color: '#8b8b99', textAlign: 'center' }}>No orders found.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -622,7 +907,7 @@ function AdminPage() {
                       </div>
                       <div style={{ padding: '1rem 1.2rem' }}>
                         <div style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.3rem' }}>{product.name}</div>
-                        <div style={{ color: '#8b8b99', fontSize: '0.85rem' }}>${product.cost}</div>
+                        <div style={{ color: '#8b8b99', fontSize: '0.85rem' }}>{formatVND(product.cost)}</div>
                         <div style={{
                           marginTop: '0.7rem',
                           display: 'inline-flex',
@@ -700,7 +985,7 @@ function AdminPage() {
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '1.15rem' }}>{selectedProductForComments.name}</div>
                     <div style={{ color: '#8b8b99', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-                      ${selectedProductForComments.cost} · {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                      {formatVND(selectedProductForComments.cost)} · {comments.length} comment{comments.length !== 1 ? 's' : ''}
                     </div>
                   </div>
                 </div>
@@ -876,7 +1161,7 @@ function AdminPage() {
       </aside>
 
       {/* Main Content - 4/5 width */}
-      <main className="admin-content">
+      <main className="admin-content" ref={adminContentRef}>
         <header className="admin-header">
           <h1>Dashboard Overview</h1>
           <p>Welcome back, Admin. Here is what's happening today.</p>

@@ -6,7 +6,7 @@ const SalesDashboard = ({ orders = [] }) => {
     const [weekOffset, setWeekOffset] = useState(0);
 
     // Xào nấu dữ liệu: Tính lại khi mảng orders hoặc weekOffset thay đổi
-    const { weekData, dateLabel } = useMemo(() => {
+    const { weekData, dateLabel, totalRevenue, totalOrders } = useMemo(() => {
         // Lấy ngày hiện tại và cộng/trừ số ngày theo weekOffset
         const curr = new Date();
         curr.setDate(curr.getDate() + (weekOffset * 7));
@@ -52,11 +52,14 @@ const SalesDashboard = ({ orders = [] }) => {
             }
         });
 
-        return { weekData: data, dateLabel: label };
+        const total = data.reduce((sum, day) => sum + day.revenue, 0);
+        const totalOrderCount = data.reduce((sum, day) => sum + day.orders, 0);
+
+        return { weekData: data, dateLabel: label, totalRevenue: total, totalOrders: totalOrderCount };
     }, [orders, weekOffset]);
 
     return (
-        <div style={{ width: '100%', height: '520px', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333', margin: 0 }}>📊 Doanh Thu Theo Tuần</h2>
 
@@ -82,23 +85,23 @@ const SalesDashboard = ({ orders = [] }) => {
                 </div>
             </div>
 
-            <ResponsiveContainer width="100%" height="90%">
+            <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={weekData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
                     <XAxis dataKey="name" stroke="#555" />
 
                     {/* Trục Y cho tiền (Bên trái) */}
                     <YAxis yAxisId="left" orientation="left" stroke="#8884d8"
-                        tickFormatter={(value) => `${(value / 1000).toLocaleString('vi-VN')}k`} />
+                        tickFormatter={(value) => `${(value / 1000).toLocaleString('vi-VN')}k VND`} />
 
                     {/* Trục Y cho số đơn (Bên phải) */}
                     <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" allowDecimals={false} />
 
                     <Tooltip
-                        formatter={(value, name) => [
-                            name === 'revenue' ? `${value.toLocaleString('vi-VN')} đ` : value,
-                            name === 'revenue' ? 'Doanh thu' : 'Số đơn'
-                        ]}
+                        formatter={(value, name) => 
+                            name === 'revenue' ? `${value.toLocaleString('vi-VN')} VND` : value
+                        }
+                        labelFormatter={(label) => `${label}`}
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                     />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -107,6 +110,22 @@ const SalesDashboard = ({ orders = [] }) => {
                     <Bar yAxisId="right" dataKey="orders" name="Số đơn hàng" fill="#82ca9d" radius={[4, 4, 0, 0]} barSize={40} />
                 </BarChart>
             </ResponsiveContainer>
+
+            {/* Phần hiển thị tổng doanh thu */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginTop: '20px' }}>
+                <div style={{ backgroundColor: '#e8f4f8', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #8884d8' }}>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#666' }}>Tổng Doanh Thu</p>
+                    <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 'bold', color: '#8884d8' }}>
+                        {totalRevenue.toLocaleString('vi-VN')} VND
+                    </p>
+                </div>
+                <div style={{ backgroundColor: '#f0f9f3', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #82ca9d' }}>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#666' }}>Tổng Số Đơn Hàng</p>
+                    <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 'bold', color: '#82ca9d' }}>
+                        {totalOrders} đơn
+                    </p>
+                </div>
+            </div>
         </div>
     );
 };
