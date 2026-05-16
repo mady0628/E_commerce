@@ -1,5 +1,6 @@
 import Product from "../module/product.module.js"
 import Comment from "../module/comment.module.js"
+import { uploadImagesToCloudinary } from "../utils/cloudinary.js";
 
 export const getProductDetailWithComments = async (req, res) => {
     try {
@@ -55,7 +56,7 @@ export const createComment = async (req, res) => {
         const { content, rating } = req.body;
 
         const imgUrls = (req.files && req.files.length > 0)
-            ? req.files.map(f => `http://localhost:3000/uploads/${f.filename}`)
+            ? await uploadImagesToCloudinary(req.files, 'new_ecommerce/comments')
             : [];
 
         const product = await Product.findById(id);

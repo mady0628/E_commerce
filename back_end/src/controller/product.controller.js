@@ -1,11 +1,12 @@
 import Product from '../module/product.module.js'
+import { uploadImagesToCloudinary } from '../utils/cloudinary.js';
 
 export const creatProduct = async (req, res) => {
     try {
         const { name, cost, describe, stock } = req.body;
 
         const imageUrls = (req.files && req.files.length > 0)
-            ? req.files.map(f => `http://localhost:3000/uploads/${f.filename}`)
+            ? await uploadImagesToCloudinary(req.files, 'new_ecommerce/products')
             : [];
 
         const product = await Product.create({
@@ -106,7 +107,7 @@ export const updateProduct = async (req, res) => {
         // Ảnh mới vừa upload
         let newImages = [];
         if (req.files && req.files.length > 0) {
-            newImages = req.files.map(f => `http://localhost:3000/uploads/${f.filename}`);
+            newImages = await uploadImagesToCloudinary(req.files, 'new_ecommerce/products');
         }
 
         const updateData = { name, cost, describe };
