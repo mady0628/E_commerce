@@ -29,6 +29,34 @@ function Sign_up() {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'radial-gradient(circle at top left, rgba(170,59,255,0.1), transparent 40%), radial-gradient(circle at bottom right, rgba(107,140,255,0.1), transparent 40%)' }}>
+      <Link
+        to="/"
+        style={{
+          position: 'fixed',
+          top: '1.5rem',
+          left: '1.5rem',
+          padding: '0.65rem 1.1rem',
+          color: '#fff',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          borderRadius: '8px',
+          fontWeight: 600,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 10,
+          transition: 'all 0.2s',
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(170,59,255,0.45)';
+          e.currentTarget.style.background = 'rgba(170,59,255,0.15)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+        }}
+      >
+        Home
+      </Link>
       <div className="glass-card" style={{ width: '100%', maxWidth: '400px', animation: 'fadeIn 0.5s ease' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '2rem', background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Create Account

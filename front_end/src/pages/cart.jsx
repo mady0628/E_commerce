@@ -116,7 +116,6 @@ function Cart() {
   if (!cart?.products?.length) {
     return (
       <div className="page-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🛒</div>
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Your Cart is Empty</h2>
         <p style={{ color: '#8b8b99', marginBottom: '2rem' }}>Looks like you haven't added anything yet.</p>
         <button 
@@ -158,7 +157,7 @@ function Cart() {
                 {item.product?.image ? (
                   <img src={item.product.image} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  '🛍️'
+                  ''
                 )}
               </div>
               
@@ -194,7 +193,7 @@ function Cart() {
                   style={{ background: 'none', border: 'none', color: '#ff4757', cursor: 'pointer', fontSize: '1.2rem', padding: '0.2rem' }}
                   title="Remove from cart"
                 >
-                  🗑️
+                  Delete
                 </button>
               </div>
             </div>

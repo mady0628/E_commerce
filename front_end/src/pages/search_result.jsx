@@ -37,9 +37,14 @@ const StarIcon = ({ filled, half, size = 18 }) => (
 const RatingStars = ({ value }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffa502', fontWeight: 600, fontSize: '0.95rem' }}>
-      <span>{!value || value === 0 ? 'no rate' : `${value}⭐`}</span>
+      <span>{!value || value === 0 ? 'no rate' : `${value}/5`}</span>
     </div>
   );
+};
+
+const getPrimaryImage = (image) => {
+  if (Array.isArray(image)) return image.find(Boolean);
+  return image;
 };
 
 function SearchResult() {
@@ -51,17 +56,15 @@ function SearchResult() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   const fetchProducts = async (offset = 0, reset = false) => {
     try {
       if (reset) setLoading(true);
       else setLoadingMore(true);
 
-      const token = localStorage.getItem('token');
       const res = await fetch(`${apiUrl('/api/product')}?q=${encodeURIComponent(keyword)}&sort=${sort}&productOffset=${offset}&productLimit=${PRODUCT_LIMIT}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
+        headers: {}
       });
       const data = await res.json();
       
@@ -80,14 +83,9 @@ function SearchResult() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/sign_in');
-      return;
-    }
     if (!keyword) return;
     fetchProducts(0, true);
-  }, [navigate, keyword, sort]);
+  }, [keyword, sort]);
 
   const handleLoadMore = () => {
     if (pagination?.hasMore) {
@@ -97,6 +95,11 @@ function SearchResult() {
 
   const addtoCart = async (id) => {
     const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/sign_in');
+      return;
+    }
+
     try {
       const data = await apiFetch('/api/cart', {
         method: 'POST',
@@ -179,10 +182,10 @@ function SearchResult() {
           {products.map((p) => (
             <div key={p._id} className="glass-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.3s', cursor: 'pointer' }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}>
               <div onClick={() => navigate(`/product/${p._id}`)} style={{ height: '200px', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', overflow: 'hidden' }}>
-                {p.image ? (
-                  <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {getPrimaryImage(p.image) ? (
+                  <img src={getPrimaryImage(p.image)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  '🛍️'
+                  ''
                 )}
               </div>
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -196,7 +199,7 @@ function SearchResult() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#aa3bff' }}>{formatVND(p.cost)}</span>
 
-                  {p.stock > 0 ? (
+                  {isLoggedIn && p.stock > 0 ? (
                     <button
                       onClick={() => addtoCart(p._id)}
                       style={{
@@ -214,7 +217,7 @@ function SearchResult() {
                     >
                       Add to Cart
                     </button>
-                  ) : (
+                  ) : !isLoggedIn ? null : (
                     <button
                       disabled
                       style={{
@@ -233,7 +236,7 @@ function SearchResult() {
                 </div>
                 <div style={{ marginTop: '0.8rem', fontSize: '0.85rem', color: p.stock > 0 ? '#2ed573' : '#ff4757', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
                   <span>{p.stock > 0 ? `In Stock: ${p.stock}` : 'Currently unavailable'}</span>
-                  <span style={{ color: '#6b8cff' }}>🔥 {p.purchased || 0} sold</span>
+                  <span style={{ color: '#6b8cff' }}>{p.purchased || 0} sold</span>
                 </div>
               </div>
             </div>

@@ -61,7 +61,7 @@ const SalesDashboard = ({ orders = [] }) => {
     return (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333', margin: 0 }}>📊 Doanh Thu Theo Tuần</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333', margin: 0 }}>Doanh Thu Theo Tuần</h2>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <button

@@ -42,7 +42,7 @@ const StarIcon = ({ filled, half, size = 18, onClick, hoverable }) => (
 const RatingStars = ({ value, showNumber }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ffa502', fontWeight: 600, fontSize: showNumber ? '1.2rem' : '1rem' }}>
-      <span>{!value || value === 0 ? 'no rate' : `${value}⭐`}</span>
+      <span>{!value || value === 0 ? 'no rate' : `${value}/5`}</span>
     </div>
   );
 };
@@ -183,14 +183,10 @@ function ProductDetail() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   /* ── fetch product + initial comments ── */
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/sign_in');
-      return;
-    }
     fetchData(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -201,8 +197,7 @@ function ProductDetail() {
       else setLoadingMore(true);
 
       const res = await fetch(
-        `${API}/product/${id}?commentOffset=${offset}&commentLimit=${COMMENT_LIMIT}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        `${API}/product/${id}?commentOffset=${offset}&commentLimit=${COMMENT_LIMIT}`
       );
       const data = await res.json();
 
@@ -252,11 +247,15 @@ function ProductDetail() {
   /* ── submit comment ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/sign_in');
+      return;
+    }
+
     if (rating === 0) return alert('Please select a rating');
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      
       const formData = new FormData();
       formData.append('content', content);
       formData.append('rating', rating);
@@ -356,7 +355,7 @@ function ProductDetail() {
                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16, animation: 'fadeIn 0.25s ease-out' }}
               />
             ) : (
-              <span style={{ fontSize: '6rem' }}>🛍️</span>
+              <span style={{ fontSize: '1rem', color: '#8b8b99' }}>No image</span>
             )}
 
             {/* Prev arrow */}
@@ -432,38 +431,40 @@ function ProductDetail() {
 
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
             {product.stock > 0 ? (
-              <span style={s.badge('#2ed573')}>✓ In Stock: {product.stock}</span>
+              <span style={s.badge('#2ed573')}>In Stock: {product.stock}</span>
             ) : (
-              <span style={s.badge('#ff4757')}>✗ Out of Stock</span>
+              <span style={s.badge('#ff4757')}>Out of Stock</span>
             )}
-            <span style={s.badge('#6b8cff')}>🔥 {product.purchased || 0} sold</span>
+            <span style={s.badge('#6b8cff')}> {product.purchased || 0} sold</span>
 
           </div>
 
-          <button
-            onClick={() => {
-              const token = localStorage.getItem('token');
-              apiFetch(`${API}/cart`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ productID: product._id }),
-              }).then(data => {
-                if (data?.products) alert('Added to cart!');
-                else alert(data?.message || 'Failed');
-              });
-            }}
-            disabled={product.stock <= 0}
-            style={{
-              ...s.submitBtn,
-              width: 'fit-content',
-              opacity: product.stock <= 0 ? 0.4 : 1,
-              cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
-            }}
-            onMouseOver={e => product.stock > 0 && (e.currentTarget.style.transform = 'translateY(-2px)')}
-            onMouseOut={e => (e.currentTarget.style.transform = 'translateY(0)')}
-          >
-            {product.stock > 0 ? '🛒 Add to Cart' : 'Out of Stock'}
-          </button>
+          {isLoggedIn && (
+            <button
+              onClick={() => {
+                const token = localStorage.getItem('token');
+                apiFetch(`${API}/cart`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ productID: product._id }),
+                }).then(data => {
+                  if (data?.products) alert('Added to cart!');
+                  else alert(data?.message || 'Failed');
+                });
+              }}
+              disabled={product.stock <= 0}
+              style={{
+                ...s.submitBtn,
+                width: 'fit-content',
+                opacity: product.stock <= 0 ? 0.4 : 1,
+                cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
+              }}
+              onMouseOver={e => product.stock > 0 && (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseOut={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -473,15 +474,16 @@ function ProductDetail() {
       {/* ── Write a Review ── */}
       <div style={s.section}>
         <h2 style={s.sectionTitle}>Write a Review</h2>
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 16,
-            padding: '1.5rem 2rem',
-          }}
-        >
+        {isLoggedIn ? (
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 16,
+              padding: '1.5rem 2rem',
+            }}
+          >
           {/* Star picker */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ color: '#8b8b99', fontSize: '0.9rem', display: 'block', marginBottom: 8 }}>
@@ -541,7 +543,7 @@ function ProductDetail() {
                     type="button"
                     onClick={() => removeFile(i)}
                     style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(255,71,87,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >✕</button>
+                  >Remove</button>
                 </div>
               ))}
               {selectedFiles.length < 5 && (
@@ -554,16 +556,27 @@ function ProductDetail() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{ ...s.submitBtn, opacity: submitting ? 0.6 : 1 }}
-            onMouseOver={e => !submitting && (e.currentTarget.style.transform = 'translateY(-2px)')}
-            onMouseOut={e => (e.currentTarget.style.transform = 'translateY(0)')}
-          >
-            {submitting ? 'Posting...' : '✍️ Post Review'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{ ...s.submitBtn, opacity: submitting ? 0.6 : 1 }}
+              onMouseOver={e => !submitting && (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseOut={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              {submitting ? 'Posting...' : 'Post Review'}
+            </button>
+          </form>
+        ) : (
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 16,
+            padding: '1.5rem 2rem',
+            color: '#8b8b99',
+          }}>
+            Please <Link to="/sign_in" style={{ color: '#aa3bff', fontWeight: 600 }}>sign in</Link> to write a review.
+          </div>
+        )}
       </div>
 
       {/* ── Comments List ── */}
@@ -581,7 +594,6 @@ function ProductDetail() {
             borderRadius: 14,
             border: '1px solid rgba(255,255,255,0.05)',
           }}>
-            <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💬</p>
             <p>No reviews yet. Be the first to share your thoughts!</p>
           </div>
         ) : (

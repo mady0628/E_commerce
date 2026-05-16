@@ -43,7 +43,6 @@ function Order() {
   if (!orders.length) {
     return (
       <div className="page-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
         <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>No Orders Yet</h2>
         <p style={{ color: '#8b8b99', marginBottom: '2rem' }}>When you place an order, it will appear here.</p>
         <Link 
@@ -125,7 +124,7 @@ function Order() {
                         {item.product?.image ? (
                           <img src={item.product.image} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          '🛍️'
+                          ''
                         )}
                       </div>
                       <div style={{ flex: 1 }}>

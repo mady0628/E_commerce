@@ -29,7 +29,8 @@ function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/sign_in');
+    setUser(null);
+    navigate('/');
   };
 
   const navStyle = {
@@ -60,8 +61,12 @@ function Navbar() {
 
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <Link to="/" style={{ ...linkStyle, color: location.pathname === '/' ? '#fff' : '#8b8b99' }}>Home</Link>
-        <Link to="/cart" style={{ ...linkStyle, color: location.pathname === '/cart' ? '#fff' : '#8b8b99' }}>Cart</Link>
-        <Link to="/order" style={{ ...linkStyle, color: location.pathname === '/order' ? '#fff' : '#8b8b99' }}>Orders</Link>
+        {token && (
+          <>
+            <Link to="/cart" style={{ ...linkStyle, color: location.pathname === '/cart' ? '#fff' : '#8b8b99' }}>Cart</Link>
+            <Link to="/order" style={{ ...linkStyle, color: location.pathname === '/order' ? '#fff' : '#8b8b99' }}>Orders</Link>
+          </>
+        )}
 
         {user?.role === 'admin' && (
           <Link to="/admin" style={{ ...linkStyle, color: '#aa3bff' }}>Admin Panel</Link>
