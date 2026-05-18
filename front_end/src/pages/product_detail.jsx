@@ -550,7 +550,7 @@ function ProductDetail() {
                     type="button"
                     onClick={() => removeFile(i)}
                     aria-label="Remove image"
-                    style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,71,87,0.88)', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}
+                    style={{ position: 'absolute', top: 4, right: 4, zIndex: 2, background: '#ff4757', color: '#fff', border: '1px solid rgba(255,255,255,0.85)', borderRadius: '50%', width: 24, minWidth: 24, height: 24, padding: 0, cursor: 'pointer', fontSize: 16, lineHeight: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontFamily: 'Arial, sans-serif', overflow: 'hidden' }}
                   >X</button>
                 </div>
               ))}
