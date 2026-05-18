@@ -278,6 +278,13 @@ function ProductDetail() {
         setSelectedFiles([]);
         setPreviews([]);
       } else {
+        if (data.message === 'invalid token') {
+          localStorage.removeItem('token');
+          alert('Your session expired. Please sign in again.');
+          navigate('/sign_in');
+          return;
+        }
+
         alert(data.message || data.error || 'Failed to post comment');
       }
     } catch {
@@ -542,8 +549,9 @@ function ProductDetail() {
                   <button 
                     type="button"
                     onClick={() => removeFile(i)}
-                    style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(255,71,87,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >Remove</button>
+                    aria-label="Remove image"
+                    style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,71,87,0.88)', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}
+                  >X</button>
                 </div>
               ))}
               {selectedFiles.length < 5 && (

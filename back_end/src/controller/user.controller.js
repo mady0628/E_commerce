@@ -25,6 +25,12 @@ export const sign_up = async (req, res) => {
 
 export const sign_in = async (req, res) => {
     try {
+        if (!process.env.JWT_PASS) {
+            return res.status(500).json({
+                message: "JWT_PASS is not configured",
+            });
+        }
+
         const { email, password } = req.body;
         const user = await User.findOne({ email });
 
