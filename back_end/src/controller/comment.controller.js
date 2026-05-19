@@ -23,7 +23,7 @@ export const getProductDetailWithComments = async (req, res) => {
         };
 
         const comment = await Comment.find(commentFilter)
-            .populate("user", "name")
+            .populate("user", "name avatar")
             .sort({ createAt: -1 })
             .skip(commentOffset)
             .limit(commentLimit);
@@ -86,7 +86,7 @@ export const createComment = async (req, res) => {
             { new: true }
         )
 
-        const populated = await Comment.findById(comment._id).populate("user", "name");
+        const populated = await Comment.findById(comment._id).populate("user", "name avatar");
 
         res.status(201).json({ comment: populated, productAfterUpdate });
     } catch (err) {
@@ -97,7 +97,7 @@ export const createComment = async (req, res) => {
 export const AdminGetAllComment = async (req, res) => {
     try {
         const { id } = req.params;
-        const comment = await Comment.find({ product: id, }).populate('user', 'name email').sort({ createAt: -1 });
+        const comment = await Comment.find({ product: id, }).populate('user', 'name email avatar').sort({ createAt: -1 });
         if (!comment) {
             return res.status(404).json({
                 error: "Not found comment;"

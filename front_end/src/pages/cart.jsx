@@ -17,6 +17,8 @@ function Cart() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [shippingInfo, setShippingInfo] = useState({ recipientName: '', phone: '', address: '' });
   const [showShippingForm, setShowShippingForm] = useState(false);
+  const [isSavingShippingInfo, setIsSavingShippingInfo] = useState(false);
+  const [shippingInfoSaved, setShippingInfoSaved] = useState(false);
   const navigation = useNavigate();
 
   useEffect(() => {
@@ -38,8 +40,88 @@ function Cart() {
       }
     };
 
+    const fetchUserShippingInfo = async () => {
+      try {
+        const data = await apiFetch("/api/auth/me", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const user = data?.user;
+        const savedShippingInfo = {
+          recipientName: user?.nameInOrder || '',
+          phone: user?.phoneNumber || '',
+          address: user?.address || '',
+        };
+
+        if (savedShippingInfo.recipientName || savedShippingInfo.phone || savedShippingInfo.address) {
+          setShippingInfo(savedShippingInfo);
+          setShippingInfoSaved(Boolean(
+            savedShippingInfo.recipientName &&
+            savedShippingInfo.phone &&
+            savedShippingInfo.address
+          ));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchCart();
+    fetchUserShippingInfo();
   }, [navigation]);
+
+  const updateShippingField = (field, value) => {
+    setShippingInfo(prev => ({ ...prev, [field]: value }));
+    setShippingInfoSaved(false);
+  };
+
+  const handleSaveShippingInfo = async () => {
+    const cleanedShippingInfo = {
+      recipientName: shippingInfo.recipientName.trim(),
+      phone: shippingInfo.phone.trim(),
+      address: shippingInfo.address.trim(),
+    };
+
+    if (!cleanedShippingInfo.recipientName || !cleanedShippingInfo.phone || !cleanedShippingInfo.address) {
+      alert("Please fill in all shipping details before saving.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    setIsSavingShippingInfo(true);
+
+    try {
+      const res = await fetch(apiUrl("/api/auth/me/shipping-info"), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nameInOrder: cleanedShippingInfo.recipientName,
+          phoneNumber: cleanedShippingInfo.phone,
+          address: cleanedShippingInfo.address
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setShippingInfo(cleanedShippingInfo);
+        setShippingInfoSaved(true);
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        alert("Shipping information saved.");
+      } else {
+        alert(data.message || "Failed to save shipping information.");
+      }
+    } catch {
+      alert("Failed to save shipping information.");
+    } finally {
+      setIsSavingShippingInfo(false);
+    }
+  };
 
   const updateQuantity = async (productID, newQuantity) => {
     const token = localStorage.getItem("token");
@@ -83,7 +165,13 @@ function Cart() {
       return;
     }
 
-    if (!shippingInfo.recipientName || !shippingInfo.phone || !shippingInfo.address) {
+    const cleanedShippingInfo = {
+      recipientName: shippingInfo.recipientName.trim(),
+      phone: shippingInfo.phone.trim(),
+      address: shippingInfo.address.trim(),
+    };
+
+    if (!cleanedShippingInfo.recipientName || !cleanedShippingInfo.phone || !cleanedShippingInfo.address) {
       alert("Please fill in all shipping details.");
       return;
     }
@@ -98,7 +186,7 @@ function Cart() {
         },
         body: JSON.stringify({ 
           selectedItemIds: selectedItems,
-          shippingInfo
+          shippingInfo: cleanedShippingInfo
         })
       });
       const data = await res.json();
@@ -108,7 +196,7 @@ function Cart() {
       } else {
         alert(data.message || "Failed to checkout. Please try again.");
       }
-    } catch (err) {
+    } catch {
       alert("Failed to checkout. Please try again.");
     }
   };
@@ -239,7 +327,7 @@ function Cart() {
                 <input 
                   type="text" 
                   value={shippingInfo.recipientName}
-                  onChange={e => setShippingInfo({...shippingInfo, recipientName: e.target.value})}
+                  onChange={e => updateShippingField('recipientName', e.target.value)}
                   required
                   style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 />
@@ -249,7 +337,7 @@ function Cart() {
                 <input 
                   type="text" 
                   value={shippingInfo.phone}
-                  onChange={e => setShippingInfo({...shippingInfo, phone: e.target.value})}
+                  onChange={e => updateShippingField('phone', e.target.value)}
                   required
                   style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 />
@@ -258,12 +346,20 @@ function Cart() {
                 <label style={{ display: 'block', marginBottom: '0.5rem', color: '#8b8b99', fontSize: '0.9rem' }}>Delivery Address</label>
                 <textarea 
                   value={shippingInfo.address}
-                  onChange={e => setShippingInfo({...shippingInfo, address: e.target.value})}
+                  onChange={e => updateShippingField('address', e.target.value)}
                   required
                   rows="3"
                   style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', resize: 'vertical' }}
                 />
               </div>
+              <button
+                type="button"
+                onClick={handleSaveShippingInfo}
+                disabled={isSavingShippingInfo}
+                style={{ padding: '0.9rem', background: shippingInfoSaved ? 'rgba(46, 213, 115, 0.14)' : 'rgba(255,255,255,0.08)', border: `1px solid ${shippingInfoSaved ? 'rgba(46, 213, 115, 0.5)' : 'rgba(255,255,255,0.18)'}`, color: shippingInfoSaved ? '#2ed573' : '#fff', borderRadius: '8px', cursor: isSavingShippingInfo ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+              >
+                {isSavingShippingInfo ? 'Saving...' : shippingInfoSaved ? 'Shipping Info Saved' : 'Save Shipping Info'}
+              </button>
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <button 
                   type="button" 

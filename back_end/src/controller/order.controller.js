@@ -12,6 +12,16 @@ export const createOrder = async (req, res) => {
             return res.status(400).json({ message: "Missing order information" });
         }
 
+        const cleanShippingInfo = {
+            recipientName: shippingInfo.recipientName?.trim(),
+            phone: shippingInfo.phone?.trim(),
+            address: shippingInfo.address?.trim(),
+        };
+
+        if (!cleanShippingInfo.recipientName || !cleanShippingInfo.phone || !cleanShippingInfo.address) {
+            return res.status(400).json({ message: "Please fill in all shipping details" });
+        }
+
         const cart = await Cart.findOne({ user: userID })
             .populate("products.product");
         if (!cart || !cart.products.length) {
@@ -44,9 +54,9 @@ export const createOrder = async (req, res) => {
             user: userID,
             products: selectedProducts,
             total: total,
-            recipientName: shippingInfo.recipientName,
-            phone: shippingInfo.phone,
-            address: shippingInfo.address
+            recipientName: cleanShippingInfo.recipientName,
+            phone: cleanShippingInfo.phone,
+            address: cleanShippingInfo.address
         })
 
         for (const item of selectedProducts) {
@@ -70,6 +80,7 @@ export const createOrder = async (req, res) => {
 export const getOrder = async (req, res) => {
     const userID = req.user.id;
     const order = await Order.find({ user: userID })
+        .sort({ createdAt: -1 })
         .populate("products.product");
 
     if (!order) {

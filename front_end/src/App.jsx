@@ -7,6 +7,7 @@ import ProductDetail from '../src/pages/product_detail'
 import SearchResult from '../src/pages/search_result'
 import Cart from '../src/pages/cart'
 import Order from '../src/pages/order';
+import Profile from '../src/pages/profile';
 import AdminRoute from './route/AdminRoute';
 import AdminPage from './admin/admin_page';
 import Navbar from './components/Navbar';
@@ -27,6 +28,7 @@ function App() {
         <Route path='/search' element={<SearchResult />} />
         <Route path='/cart' element={<Cart />} />
         <Route path='/order' element={<Order />} />
+        <Route path='/profile' element={<Profile />} />
         <Route path='/admin' element={<AdminRoute><AdminPage /></AdminRoute>} />
       </Routes>
     </>

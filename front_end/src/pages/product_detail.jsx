@@ -123,6 +123,7 @@ const s = {
     fontSize: '0.95rem',
     color: '#fff',
     flexShrink: 0,
+    overflow: 'hidden',
   },
   textarea: {
     width: '100%',
@@ -616,7 +617,11 @@ function ProductDetail() {
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '0.75rem' }}>
                   <div style={s.avatar}>
-                    {getInitial(c.user?.name)}
+                    {c.user?.avatar ? (
+                      <img src={c.user.avatar} alt={c.user?.name || 'User avatar'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      getInitial(c.user?.name)
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>

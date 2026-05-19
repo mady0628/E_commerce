@@ -110,10 +110,14 @@ function AdminPage() {
           'Authorization': `Bearer ${token}`
         }
       });
+      const data = await res.json();
       if (res.ok) {
+        if (data.message && data.message.toLowerCase().includes('admin')) {
+          alert(data.message);
+          return;
+        }
         fetchUsers();
       } else {
-        const data = await res.json();
         alert(data.message || "Failed to delete user");
       }
     } catch (err) {

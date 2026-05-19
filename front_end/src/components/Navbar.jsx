@@ -9,18 +9,57 @@ function Navbar() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    if (token) {
-      // Optional: fetch user data to check if admin
-      fetch(apiUrl('/api/auth/me'), {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) setUser(data.user);
-        })
-        .catch(err => console.error(err));
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('user');
+      }
     }
-  }, [token]);
+
+    if (!token) {
+      setUser(null);
+      return;
+    }
+
+    fetch(apiUrl('/api/auth/me'), {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      })
+      .catch(err => console.error(err));
+  }, [token, location.pathname]);
+
+  useEffect(() => {
+    const syncUser = () => {
+      const savedUser = localStorage.getItem('user');
+      if (!savedUser) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        localStorage.removeItem('user');
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('user-updated', syncUser);
+    window.addEventListener('storage', syncUser);
+
+    return () => {
+      window.removeEventListener('user-updated', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
 
   // Don't show navbar on login/register pages
   if (location.pathname === '/sign_in' || location.pathname === '/sign_up') {
@@ -29,6 +68,7 @@ function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     navigate('/');
   };
@@ -53,6 +93,21 @@ function Navbar() {
     transition: 'color 0.3s',
   };
 
+  const avatarStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: '50%',
+    overflow: 'hidden',
+    background: 'linear-gradient(135deg, #aa3bff, #6b8cff)',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 700,
+    fontSize: '0.9rem',
+    flexShrink: 0,
+  };
+
   return (
     <nav style={navStyle}>
       <div style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(135deg, #aa3bff, #6b8cff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -65,6 +120,7 @@ function Navbar() {
           <>
             <Link to="/cart" style={{ ...linkStyle, color: location.pathname === '/cart' ? '#fff' : '#8b8b99' }}>Cart</Link>
             <Link to="/order" style={{ ...linkStyle, color: location.pathname === '/order' ? '#fff' : '#8b8b99' }}>Orders</Link>
+            <Link to="/profile" style={{ ...linkStyle, color: location.pathname === '/profile' ? '#fff' : '#8b8b99' }}>My Account</Link>
           </>
         )}
 
@@ -73,19 +129,43 @@ function Navbar() {
         )}
 
         {token ? (
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '0.6rem 1.2rem',
-              background: 'rgba(255, 71, 87, 0.1)',
-              color: '#ff4757',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,71,87,0.3)',
-              fontWeight: 600
-            }}
-          >
-            Logout
-          </button>
+          <>
+            <Link
+              to="/profile"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                marginRight: '1rem',
+                color: '#fff',
+                maxWidth: 180,
+              }}
+            >
+              <span style={avatarStyle}>
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user?.name?.charAt(0)?.toUpperCase() || '?'
+                )}
+              </span>
+              <span style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.name || 'Account'}
+              </span>
+            </Link>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '0.6rem 1.2rem',
+                background: 'rgba(255, 71, 87, 0.1)',
+                color: '#ff4757',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,71,87,0.3)',
+                fontWeight: 600
+              }}
+            >
+              Logout
+            </button>
+          </>
         ) : (
           <Link
             to="/sign_in"

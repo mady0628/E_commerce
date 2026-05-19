@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import User from '../module/user.module.js';
 import jwt from 'jsonwebtoken';
+import { uploadImageToCloudinary } from '../utils/cloudinary.js';
 
 export const sign_up = async (req, res) => {
     try {
@@ -68,6 +69,45 @@ export const me = async (req, res) => {
     res.json({ user: req.user });
 }
 
+export const updateShippingInfo = async (req, res) => {
+    try {
+        const { nameInOrder, phoneNumber, address } = req.body;
+
+        const shippingInfo = {
+            nameInOrder: nameInOrder?.trim(),
+            phoneNumber: phoneNumber?.trim(),
+            address: address?.trim(),
+        };
+
+        if (!shippingInfo.nameInOrder || !shippingInfo.phoneNumber || !shippingInfo.address) {
+            return res.status(400).json({
+                message: "Please fill in all shipping details",
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            shippingInfo,
+            { new: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+            });
+        }
+
+        res.json({
+            message: "Shipping info saved",
+            user,
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message,
+        });
+    }
+}
+
 export const getAllUsers = async (req, res) => {
     try {
         const { q = '' } = req.query;
@@ -91,6 +131,71 @@ export const getAllUsers = async (req, res) => {
         })
     }
 }
+
+export const changepassword = async (req, res) =>{
+    try {
+        const id = req.user.id;
+        const {currentPassword, newPassword} = req.body;
+        if (!currentPassword || !newPassword){
+            return res.json({
+                message: "Please fill full information",
+            })
+        }
+        const user = await User.findById(id);
+        const match = await bcrypt.compare(currentPassword,user.password);
+        if (!match){
+            return res.json({
+                message: "Current password is wrong",
+            })
+        }
+        user.password = await bcrypt.hashSync(newPassword,10);
+        await user.save();
+        res.json({
+            message: "Change password success",
+        })
+    } catch (err) {
+        res.json({
+            error: err.message,
+        })
+    }
+}
+
+export const updateAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Please upload an avatar",
+            })
+        }
+
+        const avatarUrl = await uploadImageToCloudinary(
+            req.file,
+            'new_ecommerce/avatars'
+        );
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { avatar: avatarUrl },
+            { new: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+            })
+        }
+
+        res.json({
+            message: "Avatar updated",
+            user,
+        })
+    } catch (err) {
+        res.status(500).json({
+            error: err.message,
+        })
+    }
+}
+
 export const updateRole = async (req, res) => {
     try {
         const { id } = req.params;
@@ -107,11 +212,13 @@ export const updateRole = async (req, res) => {
             { role },
             { new: true },
         ).select('-password');
+
         if (!updateUser) {
             return res.status(404).json({
                 message: "Can't find User",
             })
         }
+
         res.json({
             message: "Update finish",
             user: updateUser,
@@ -126,6 +233,17 @@ export const updateRole = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
+        const checkroleadmin = await User.findById(id);
+        if (!checkroleadmin) {
+            return res.status(404).json({
+                message: "Can't find User",
+            })
+        }
+        if (checkroleadmin.role === 'admin'){
+            return res.json({
+                message: "This account is admin. Cannot be delete"
+            })
+        }
         const user = await User.findByIdAndDelete(id);
         if (!user) {
             return res.status(404).json({
