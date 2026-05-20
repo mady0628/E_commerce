@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, apiUrl } from "../utils/api";
 
-// Helper function to format currency to VND
 const formatVND = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -231,7 +230,6 @@ function Cart() {
       </h1>
 
       <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        {/* Cart Items List */}
         <div style={{ flex: '1 1 600px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cart.products.map((item) => (
             <div key={item.product?._id} className="glass-card" style={{ display: 'flex', alignItems: 'center', padding: '1.5rem', gap: '1.5rem', opacity: selectedItems.includes(item.product?._id) ? 1 : 0.7 }}>
@@ -288,7 +286,6 @@ function Cart() {
           ))}
         </div>
 
-        {/* Order Summary Sidebar */}
         <div className="glass-card" style={{ flex: '0 1 350px', position: 'sticky', top: '100px' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
             Order Summary

@@ -10,9 +10,9 @@ export const authMiddleware = async (req,res,next) =>{
         }
 
         const authHeader = req.headers.authorization;
-        if (!authHeader){
-            return res.status(400).json({
-                message:"no token"
+        if (!authHeader || !authHeader.startsWith('Bearer ')){
+            return res.status(401).json({
+                message:"Unauthorized"
             })
         }
 

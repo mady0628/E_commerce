@@ -2,26 +2,26 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { apiUrl } from '../utils/api';
 
+const getStoredUser = () => {
+  const savedUser = localStorage.getItem('user');
+  if (!savedUser) return null;
+
+  try {
+    return JSON.parse(savedUser);
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem('token');
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(getStoredUser);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('user');
-      }
-    }
-
-    if (!token) {
-      setUser(null);
-      return;
-    }
+    if (!token) return;
 
     fetch(apiUrl('/api/auth/me'), {
       headers: { Authorization: `Bearer ${token}` }
@@ -38,18 +38,7 @@ function Navbar() {
 
   useEffect(() => {
     const syncUser = () => {
-      const savedUser = localStorage.getItem('user');
-      if (!savedUser) {
-        setUser(null);
-        return;
-      }
-
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem('user');
-        setUser(null);
-      }
+      setUser(getStoredUser());
     };
 
     window.addEventListener('user-updated', syncUser);
@@ -61,7 +50,6 @@ function Navbar() {
     };
   }, []);
 
-  // Don't show navbar on login/register pages
   if (location.pathname === '/sign_in' || location.pathname === '/sign_up') {
     return null;
   }
@@ -124,7 +112,7 @@ function Navbar() {
           </>
         )}
 
-        {user?.role === 'admin' && (
+        {token && user?.role === 'admin' && (
           <Link to="/admin" style={{ ...linkStyle, color: '#aa3bff' }}>Admin Panel</Link>
         )}
 

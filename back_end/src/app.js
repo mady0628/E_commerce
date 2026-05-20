@@ -13,13 +13,10 @@ import comment from './router/comment.router.js'
 dotenv.config();
 const app = express();
 
-//middleware
 app.use(express.json());
 app.use(morgan('dev'));
 app.use(cors());
 app.use('/uploads', express.static('public/uploads'));
-
-//mongoose
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
@@ -29,19 +26,16 @@ mongoose.connect(process.env.MONGO_URL)
         console.log(err);
     })
 
-//test api
 app.get('/', (req, res) => {
     res.send("Server is running..");
 })
 
-//router
 app.use('/api/auth', auth);
 app.use('/api', product);
 app.use('/api', cart);
 app.use('/api', order);
 app.use('/api', comment);
 
-// connect sv
 const PORT = 3000
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`)

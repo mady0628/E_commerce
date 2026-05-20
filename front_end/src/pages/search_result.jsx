@@ -4,7 +4,6 @@ import { apiFetch, apiUrl } from '../utils/api';
 
 const PRODUCT_LIMIT = 10;
 
-// Helper function to format currency to VND
 const formatVND = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',

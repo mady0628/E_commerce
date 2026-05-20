@@ -5,7 +5,6 @@ import { apiFetch, apiUrl } from '../utils/api';
 const API = apiUrl('/api');
 const COMMENT_LIMIT = 5;
 
-// Helper function to format currency to VND
 const formatVND = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -47,7 +46,6 @@ const RatingStars = ({ value, showNumber }) => {
   );
 };
 
-/* ── Styles object ─────────────────────────────── */
 const s = {
   page: {
     padding: '2rem 4rem',
@@ -165,7 +163,6 @@ const s = {
   },
 };
 
-/* ── Component ─────────────────────────────────── */
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -175,9 +172,8 @@ function ProductDetail() {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [activeImg, setActiveImg] = useState(0);   // index ảnh đang hiển thị lớn
+  const [activeImg, setActiveImg] = useState(0);
 
-  // comment form
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [content, setContent] = useState('');
@@ -186,7 +182,6 @@ function ProductDetail() {
   const [submitting, setSubmitting] = useState(false);
   const isLoggedIn = Boolean(localStorage.getItem('token'));
 
-  /* ── fetch product + initial comments ── */
   useEffect(() => {
     fetchData(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,14 +212,12 @@ function ProductDetail() {
     }
   };
 
-  /* ── load more comments ── */
   const handleLoadMore = () => {
     if (pagination?.hasMore) {
       fetchData(pagination.nextOffset, false);
     }
   };
 
-  /* ── handle file selection ── */
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length + selectedFiles.length > 5) {
@@ -245,7 +238,6 @@ function ProductDetail() {
     });
   };
 
-  /* ── submit comment ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -295,7 +287,6 @@ function ProductDetail() {
     }
   };
 
-  /* ── helpers ── */
   const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -310,7 +301,6 @@ function ProductDetail() {
 
   const getInitial = (name) => (name ? name.charAt(0).toUpperCase() : '?');
 
-  // Chuẩn hóa images thành mảng (tương thích cả string cũ lẫn array mới)
   const images = product
     ? (Array.isArray(product.image)
         ? product.image.filter(Boolean)
@@ -320,7 +310,6 @@ function ProductDetail() {
   const prevImg = () => setActiveImg(i => (i - 1 + images.length) % images.length);
   const nextImg = () => setActiveImg(i => (i + 1) % images.length);
 
-  /* ── render ── */
   if (loading) {
     return (
       <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -348,12 +337,8 @@ function ProductDetail() {
 
   return (
     <div style={s.page}>
-
-      {/* ── Product Info ── */}
       <div style={s.grid}>
-        {/* Image Gallery */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Main image + arrows */}
           <div style={{ ...s.imgBox, position: 'relative' }}>
             {images.length > 0 ? (
               <img
@@ -366,7 +351,6 @@ function ProductDetail() {
               <span style={{ fontSize: '1rem', color: '#8b8b99' }}>No image</span>
             )}
 
-            {/* Prev arrow */}
             {images.length > 1 && (
               <button onClick={prevImg} style={{
                 position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
@@ -380,7 +364,6 @@ function ProductDetail() {
               >&#8249;</button>
             )}
 
-            {/* Next arrow */}
             {images.length > 1 && (
               <button onClick={nextImg} style={{
                 position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
@@ -395,7 +378,6 @@ function ProductDetail() {
             )}
           </div>
 
-          {/* Thumbnails */}
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
               {images.map((url, i) => (
@@ -421,7 +403,6 @@ function ProductDetail() {
           )}
         </div>
 
-        {/* Info */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{ fontSize: '2.2rem', marginBottom: '0.4rem', fontWeight: 700 }}>
             {product.name}
@@ -476,10 +457,8 @@ function ProductDetail() {
         </div>
       </div>
 
-      {/* ── Divider ── */}
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '1rem 0' }} />
 
-      {/* ── Write a Review ── */}
       <div style={s.section}>
         <h2 style={s.sectionTitle}>Write a Review</h2>
         {isLoggedIn ? (
@@ -492,7 +471,6 @@ function ProductDetail() {
               padding: '1.5rem 2rem',
             }}
           >
-          {/* Star picker */}
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ color: '#8b8b99', fontSize: '0.9rem', display: 'block', marginBottom: 8 }}>
               Your Rating
@@ -517,7 +495,6 @@ function ProductDetail() {
             </div>
           </div>
 
-          {/* Text */}
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ color: '#8b8b99', fontSize: '0.9rem', display: 'block', marginBottom: 8 }}>
               Your Comment
@@ -538,7 +515,6 @@ function ProductDetail() {
             />
           </div>
 
-          {/* Image Upload */}
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ color: '#8b8b99', fontSize: '0.9rem', display: 'block', marginBottom: 8 }}>
               Add Images (Max 5)
@@ -588,7 +564,6 @@ function ProductDetail() {
         )}
       </div>
 
-      {/* ── Comments List ── */}
       <div style={s.section}>
         <h2 style={s.sectionTitle}>
           Customer Reviews {pagination && `(${pagination.total})`}
@@ -614,7 +589,6 @@ function ProductDetail() {
                 onMouseOver={e => (e.currentTarget.style.borderColor = 'rgba(170,59,255,0.2)')}
                 onMouseOut={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
               >
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '0.75rem' }}>
                   <div style={s.avatar}>
                     {c.user?.avatar ? (
@@ -635,13 +609,11 @@ function ProductDetail() {
                     </div>
                   </div>
                 </div>
-                {/* Body */}
                 {c.content && (
                   <p style={{ color: '#ccc', lineHeight: 1.6, margin: '0 0 1rem 50px' }}>
                     {c.content}
                   </p>
                 )}
-                {/* Comment Images */}
                 {c.images && c.images.length > 0 && (
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', paddingLeft: 50 }}>
                     {c.images.map((img, i) => (
@@ -658,7 +630,6 @@ function ProductDetail() {
               </div>
             ))}
 
-            {/* Load More */}
             {pagination?.hasMore && (
               <button
                 onClick={handleLoadMore}
@@ -681,8 +652,6 @@ function ProductDetail() {
           </>
         )}
       </div>
-
-      {/* ── Responsive ── */}
       <style>{`
         @media (max-width: 768px) {
           .product-grid { grid-template-columns: 1fr !important; }

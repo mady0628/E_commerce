@@ -2,30 +2,23 @@ import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const SalesDashboard = ({ orders = [] }) => {
-    // Biến lưu trạng thái tuần: 0 là tuần này, -1 là tuần trước, 1 là tuần sau...
     const [weekOffset, setWeekOffset] = useState(0);
 
-    // Xào nấu dữ liệu: Tính lại khi mảng orders hoặc weekOffset thay đổi
     const { weekData, dateLabel, totalRevenue, totalOrders } = useMemo(() => {
-        // Lấy ngày hiện tại và cộng/trừ số ngày theo weekOffset
         const curr = new Date();
         curr.setDate(curr.getDate() + (weekOffset * 7));
 
-        const firstDay = curr.getDate() - curr.getDay() + 1; // Tính ra ngày Thứ 2
+        const firstDay = curr.getDate() - curr.getDay() + 1;
 
-        // Cột mốc bắt đầu (00:00:00 Thứ 2)
         const startOfWeek = new Date(curr.setDate(firstDay));
         startOfWeek.setHours(0, 0, 0, 0);
 
-        // Cột mốc kết thúc (23:59:59 Chủ Nhật)
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        // Format label hiển thị (VD: 15/05/2026 - 21/05/2026)
         const label = `${startOfWeek.toLocaleDateString('vi-VN')} - ${endOfWeek.toLocaleDateString('vi-VN')}`;
 
-        // Khởi tạo 7 giỏ rỗng
         const data = [
             { name: 'Thứ 2', revenue: 0, orders: 0 },
             { name: 'Thứ 3', revenue: 0, orders: 0 },
@@ -36,12 +29,10 @@ const SalesDashboard = ({ orders = [] }) => {
             { name: 'CN', revenue: 0, orders: 0 },
         ];
 
-        // Duyệt đơn hàng và phân loại
         orders.forEach(order => {
             if (order.status === 'success' && order.createdAt) {
                 const orderDate = new Date(order.createdAt);
 
-                // Nếu nằm trong tuần đang xem
                 if (orderDate >= startOfWeek && orderDate <= endOfWeek) {
                     let dayIndex = orderDate.getDay() - 1;
                     if (dayIndex === -1) dayIndex = 6;
@@ -90,11 +81,9 @@ const SalesDashboard = ({ orders = [] }) => {
                     <CartesianGrid strokeDasharray="3 3" opacity={0.5} />
                     <XAxis dataKey="name" stroke="#555" />
 
-                    {/* Trục Y cho tiền (Bên trái) */}
                     <YAxis yAxisId="left" orientation="left" stroke="#8884d8"
                         tickFormatter={(value) => `${(value / 1000).toLocaleString('vi-VN')}k VND`} />
 
-                    {/* Trục Y cho số đơn (Bên phải) */}
                     <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" allowDecimals={false} />
 
                     <Tooltip
@@ -111,7 +100,6 @@ const SalesDashboard = ({ orders = [] }) => {
                 </BarChart>
             </ResponsiveContainer>
 
-            {/* Phần hiển thị tổng doanh thu */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginTop: '20px' }}>
                 <div style={{ backgroundColor: '#e8f4f8', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #8884d8' }}>
                     <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#666' }}>Tổng Doanh Thu</p>

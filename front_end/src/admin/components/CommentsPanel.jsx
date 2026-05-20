@@ -12,7 +12,6 @@ function CommentsPanel({
   return (
           <div className="admin-panel" key="comment">
             {!selectedProductForComments ? (
-              /* ── Product List View ── */
               <>
                 <h2>Comment Management</h2>
                 <p style={{ color: '#8b8b99', marginTop: '1rem', marginBottom: '2rem' }}>
@@ -74,7 +73,6 @@ function CommentsPanel({
                 </div>
               </>
             ) : (
-              /* ── Comment Detail View ── */
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                   <button
@@ -98,7 +96,6 @@ function CommentsPanel({
                   <h2 style={{ margin: 0 }}>Comments</h2>
                 </div>
 
-                {/* Product info banner */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -167,7 +164,6 @@ function CommentsPanel({
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.8rem' }}>
-                          {/* Left: user + rating + content */}
                           <div style={{ flex: 1, minWidth: '200px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
                               <div style={{
@@ -227,7 +223,6 @@ function CommentsPanel({
                             )}
                           </div>
 
-                          {/* Right: toggle button */}
                           <button
                             onClick={() => handleToggleCommentVisibility(comment._id, comment.isHidden)}
                             style={{

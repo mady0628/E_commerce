@@ -1,6 +1,6 @@
-# E-Commerce Web Application
+# Keyboard Store - E-Commerce Web Application
 
-Ứng dụng thương mại điện tử full-stack được xây dựng bằng React, Node.js, Express và MongoDB. Project mô phỏng các chức năng chính của một website bán hàng trực tuyến như xem sản phẩm, tìm kiếm, giỏ hàng, đặt hàng, lịch sử đơn hàng, đánh giá sản phẩm và trang quản trị dành cho admin.
+Keyboard Store là ứng dụng thương mại điện tử full-stack được xây dựng bằng React, Node.js, Express và MongoDB. Project mô phỏng các chức năng chính của một website bán bàn phím trực tuyến như xem sản phẩm, tìm kiếm, giỏ hàng, đặt hàng, lịch sử đơn hàng, đánh giá sản phẩm và trang quản trị dành cho admin.
 
 ## Tính năng chính
 
@@ -17,6 +17,7 @@
 - Chọn một phần sản phẩm trong giỏ để thanh toán.
 - Nhập thông tin giao hàng khi đặt hàng.
 - Xem lịch sử đơn hàng cá nhân.
+- Cập nhật thông tin cá nhân, thông tin giao hàng và ảnh đại diện.
 
 ### Quản trị viên
 
@@ -47,6 +48,7 @@
 - JSON Web Token
 - bcrypt
 - Multer
+- Cloudinary
 - CORS
 - Morgan
 - Dotenv
@@ -54,7 +56,7 @@
 ## Cấu trúc thư mục
 
 ```txt
-New_Ecommerce/
+Keyboard-Store/
 ├── back_end/
 │   ├── src/
 │   │   ├── controller/
@@ -105,8 +107,8 @@ Người dùng có thể đánh giá sản phẩm bằng số sao, viết bình 
 ### 1. Clone project
 
 ```bash
-git clone <repository-url>
-cd New_Ecommerce
+git clone https://github.com/mady0628/Keyboard-Store.git
+cd Keyboard-Store
 ```
 
 ### 2. Cài đặt backend
@@ -121,6 +123,10 @@ Tạo file `.env` trong thư mục `back_end/`:
 ```env
 MONGO_URL=<your-mongodb-connection-string>
 JWT_PASS=<your-jwt-secret>
+CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
+CLOUDINARY_API_KEY=<your-cloudinary-api-key>
+CLOUDINARY_API_SECRET=<your-cloudinary-api-secret>
+CLOUDINARY_FOLDER=new_ecommerce
 ```
 
 Chạy backend:
@@ -145,6 +151,12 @@ npm install
 npm run dev
 ```
 
+Nếu backend không chạy tại `http://localhost:3000`, tạo file `.env` trong thư mục `front_end/`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
 Frontend sẽ chạy trên Vite development server.
 
 ## Tổng quan API
@@ -156,6 +168,9 @@ POST   /api/auth/sign_up
 POST   /api/auth/sign_in
 GET    /api/auth/me
 GET    /api/auth/users
+PATCH  /api/auth/me/shipping-info
+PATCH  /api/auth/me/avatar
+PATCH  /api/auth/me/password
 PATCH  /api/auth/users/:id/role
 DELETE /api/auth/users/:id
 ```
@@ -200,11 +215,12 @@ PATCH  /api/admin/comments/:id/visibility
 - Xây dựng đầy đủ luồng thương mại điện tử từ xem sản phẩm đến đặt hàng.
 - Áp dụng JWT authentication và role-based authorization.
 - Có trang quản trị riêng cho admin.
-- Tích hợp upload ảnh bằng Multer.
+- Tích hợp upload ảnh bằng Multer và Cloudinary.
 - Có kiểm tra tồn kho khi thêm vào giỏ và đặt hàng.
 - Hỗ trợ tìm kiếm, sắp xếp và phân trang sản phẩm.
 - Sử dụng Mongoose để thiết kế schema và liên kết dữ liệu giữa user, product, cart, order và comment.
 - Có hệ thống đánh giá sản phẩm và quản lý bình luận.
+- Có trang hồ sơ người dùng để cập nhật thông tin cá nhân, avatar và địa chỉ giao hàng.
 
 ## Các màn hình chính
 
@@ -217,6 +233,7 @@ PATCH  /api/admin/comments/:id/visibility
 - Trang lịch sử đơn hàng
 - Trang đăng nhập
 - Trang đăng ký
+- Trang hồ sơ người dùng
 - Trang quản trị admin
 
 ## Hướng phát triển tiếp theo
@@ -224,11 +241,9 @@ PATCH  /api/admin/comments/:id/visibility
 - Tích hợp thanh toán online.
 - Thêm test tự động cho backend API.
 - Bổ sung validation form và validation request.
-- Đưa API base URL vào biến môi trường.
 - Thêm middleware xử lý lỗi tập trung.
 - Cải thiện độ an toàn của checkout bằng MongoDB transaction.
 - Thêm danh mục sản phẩm và bộ lọc nâng cao.
-- Thêm trang hồ sơ người dùng.
 - Bổ sung cấu hình deploy.
 
 ## Mục tiêu project

@@ -168,7 +168,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Custom Scrollbar for admin layout */
 .admin-container ::-webkit-scrollbar {
   width: 8px;
 }

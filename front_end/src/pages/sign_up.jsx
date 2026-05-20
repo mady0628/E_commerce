@@ -22,7 +22,7 @@ function Sign_up() {
       } else {
         alert(data.message || data.error || "Sign up failed");
       }
-    } catch (err) {
+    } catch {
       alert("Error connecting to server");
     }
   };

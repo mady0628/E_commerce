@@ -69,7 +69,7 @@ export const createOrder = async (req, res) => {
             !selectedItemIds.includes(item.product._id.toString())
         );
         await cart.save();
-        res.json(order);
+        res.status(201).json(order);
     } catch (err) {
         res.status(500).json({
             error: err.message,
@@ -83,13 +83,7 @@ export const getOrder = async (req, res) => {
         .sort({ createdAt: -1 })
         .populate("products.product");
 
-    if (!order) {
-        return res.status(400).json({
-            message: "No order",
-        })
-    } else {
-        res.json(order)
-    }
+    res.json(order)
 }
 
 export const getAllOrder = async (req, res) => {

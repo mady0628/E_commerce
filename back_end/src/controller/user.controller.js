@@ -6,6 +6,19 @@ import { uploadImageToCloudinary } from '../utils/cloudinary.js';
 export const sign_up = async (req, res) => {
     try {
         const { name, email, password } = req.body;
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                message: "Please fill full information",
+            })
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({
+                message: "Email already exists",
+            })
+        }
+
         const passwordHash = await bcrypt.hashSync(password, 10);
 
         const user = await User.create({
@@ -13,7 +26,7 @@ export const sign_up = async (req, res) => {
             email,
             password: passwordHash
         })
-        res.json({
+        res.status(201).json({
             message: "create succes",
             user
         })
@@ -33,17 +46,23 @@ export const sign_in = async (req, res) => {
         }
 
         const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Please fill full information",
+            })
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(400).json({
-                message: "Email not found",
+            return res.status(401).json({
+                message: "Invalid email or password",
             })
         }
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
-            return res.status(400).json({
-                message: "Wrong password",
+            return res.status(401).json({
+                message: "Invalid email or password",
             })
         }
         const token = jwt.sign(
@@ -59,7 +78,7 @@ export const sign_in = async (req, res) => {
             user: userSafe
         })
     } catch (err) {
-        res.json({
+        res.status(500).json({
             error: err.message,
         })
     }
@@ -137,14 +156,14 @@ export const changepassword = async (req, res) =>{
         const id = req.user.id;
         const {currentPassword, newPassword} = req.body;
         if (!currentPassword || !newPassword){
-            return res.json({
+            return res.status(400).json({
                 message: "Please fill full information",
             })
         }
         const user = await User.findById(id);
         const match = await bcrypt.compare(currentPassword,user.password);
         if (!match){
-            return res.json({
+            return res.status(401).json({
                 message: "Current password is wrong",
             })
         }
@@ -154,7 +173,7 @@ export const changepassword = async (req, res) =>{
             message: "Change password success",
         })
     } catch (err) {
-        res.json({
+        res.status(500).json({
             error: err.message,
         })
     }
@@ -240,7 +259,7 @@ export const deleteUser = async (req, res) => {
             })
         }
         if (checkroleadmin.role === 'admin'){
-            return res.json({
+            return res.status(403).json({
                 message: "This account is admin. Cannot be delete"
             })
         }

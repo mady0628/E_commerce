@@ -126,7 +126,6 @@ export const AdminUpdateCommentStatus = async (req, res) => {
             })
         }
 
-        // Recalculate product rating
         const productId = comment.product;
         const allVisibleComments = await Comment.find({ product: productId, isHidden: false });
         const sumRate = allVisibleComments.reduce((sum, c) => sum + c.rating, 0);

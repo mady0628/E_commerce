@@ -23,7 +23,6 @@ function ProductsPanel({
               Manage your store products, inventory, pricing, and categories.
             </p>
 
-            {/* Product Search Input */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
               <input 
                 type="text" 
@@ -118,7 +117,6 @@ function ProductsPanel({
                   style={{ flex: 2, minWidth: '250px', padding: '0.8rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 />
                 <div style={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {/* Ảnh cũ đang giữ lại (chỉ hiện khi edit) */}
                   {editingProductId && newProduct.keepImages.length > 0 && (
                     <div>
                       <div style={{ fontSize: '0.8rem', color: '#8b8b99', marginBottom: '0.4rem' }}>Current images (click × to remove):</div>
@@ -137,7 +135,6 @@ function ProductsPanel({
                     </div>
                   )}
 
-                  {/* Input chọn ảnh mới */}
                   <div>
                     <input
                       type="file"
@@ -149,7 +146,6 @@ function ProductsPanel({
                     <span style={{ fontSize: '0.78rem', color: '#8b8b99', marginTop: '0.25rem', display: 'block' }}>Tối đa 5 ảnh, mỗi ảnh ≤ 5MB</span>
                   </div>
 
-                  {/* Preview ảnh mới chọn */}
                   {newProduct.images.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       {newProduct.images.map((file, i) => (

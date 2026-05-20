@@ -3,14 +3,13 @@ import { Navigate } from "react-router-dom";
 import { apiUrl } from "../utils/api";
 
 export default function AdminRoute({children}){
-    const [status, setStatus] = useState("loading");
+    const [status, setStatus] = useState(() => (
+        localStorage.getItem("token") ? "loading" : "unauthorized"
+    ));
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        if (!token) {
-            setStatus("unauthorized");
-            return;
-        }
+        if (!token) return;
 
         let alive = true;
 

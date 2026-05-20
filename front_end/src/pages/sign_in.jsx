@@ -18,12 +18,11 @@ function Sign_in() {
 
       if (res.token) {
         localStorage.setItem('token', res.token);
-        // Dispatch custom event to notify Navbar of login (optional, a page reload or context is better, but this works for simple apps)
         navigate('/');
       } else {
         alert(res.message || "Login failed");
       }
-    } catch (err) {
+    } catch {
       alert("Error connecting to server");
     }
   };

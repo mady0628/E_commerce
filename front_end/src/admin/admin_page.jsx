@@ -134,10 +134,8 @@ function AdminPage() {
       formData.append('describe', newProduct.describe);
       formData.append('stock', newProduct.stock);
 
-      // Append từng ảnh mới vào field 'images'
       newProduct.images.forEach(file => formData.append('images', file));
 
-      // Khi edit: gửi danh sách ảnh cũ muốn giữ (dưới dạng JSON)
       if (editingProductId) {
         formData.append('keepImages', JSON.stringify(newProduct.keepImages));
       }
@@ -174,7 +172,7 @@ function AdminPage() {
       name: product.name,
       cost: product.cost,
       describe: product.describe,
-      images: [],                                          // chưa chọn file mới
+      images: [],
       keepImages: Array.isArray(product.image) ? product.image : (product.image ? [product.image] : []),
       stock: product.stock !== undefined ? product.stock : ''
     });
@@ -329,7 +327,6 @@ function AdminPage() {
         }}
       />
 
-      {/* Main Content - 4/5 width */}
       <main className="admin-content" ref={adminContentRef}>
         <header className="admin-header">
           <h1>Dashboard Overview</h1>

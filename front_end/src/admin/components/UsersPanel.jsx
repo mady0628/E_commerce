@@ -13,7 +13,6 @@ function UsersPanel({
               View and manage registered users, their roles, and account status.
             </p>
 
-            {/* User Search Input */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
               <input 
                 type="text" 

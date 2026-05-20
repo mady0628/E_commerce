@@ -16,7 +16,7 @@ export const creatProduct = async (req, res) => {
             stock: stock ? parseInt(stock) : 0,
             image: imageUrls,
         })
-        res.json({
+        res.status(201).json({
             message: "created success",
             product,
         })
@@ -32,7 +32,7 @@ export const getProduct = async (req, res) => {
     try {
         const { q = '', sort = 'newest' } = req.query;
 
-        let sortOption = { createAt: -1 }; // default newest
+        let sortOption = { createAt: -1 };
         if (sort === 'best_selling') sortOption = { purchased: -1, createAt: -1 };
         if (sort === 'price_asc') sortOption = { cost: 1, createAt: -1 };
         if (sort === 'price_desc') sortOption = { cost: -1, createAt: -1 };
@@ -98,13 +98,11 @@ export const updateProduct = async (req, res) => {
         const { id } = req.params;
         const { name, cost, describe, stock } = req.body;
 
-        // Ảnh cũ muốn giữ lại (frontend gửi lên dạng JSON string)
         let keepImages = [];
         if (req.body.keepImages) {
             try { keepImages = JSON.parse(req.body.keepImages); } catch { keepImages = []; }
         }
 
-        // Ảnh mới vừa upload
         let newImages = [];
         if (req.files && req.files.length > 0) {
             newImages = await uploadImagesToCloudinary(req.files, 'new_ecommerce/products');
@@ -114,7 +112,7 @@ export const updateProduct = async (req, res) => {
         if (stock !== undefined) {
             updateData.stock = parseInt(stock);
         }
-        // Chỉ cập nhật image khi client có gửi keepImages hoặc có file mới
+
         if (req.body.keepImages !== undefined || newImages.length > 0) {
             updateData.image = [...keepImages, ...newImages];
         }
